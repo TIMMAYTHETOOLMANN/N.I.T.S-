@@ -1,0 +1,1 @@
+// stub: GlamorDocIntegrator.ts

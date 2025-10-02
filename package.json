@@ -1,0 +1,15 @@
+{
+  "name": "nits-core-legal-engine",
+  "version": "0.1.0",
+  "main": "deploy/pipeline.js",
+  "scripts": {
+    "start": "ts-node deploy/pipeline.ts",
+    "test": "jest"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "ts-node": "*",
+    "typescript": "*",
+    "jest": "*"
+  }
+}
