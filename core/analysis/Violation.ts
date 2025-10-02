@@ -1,5 +1,5 @@
 export interface Penalty {
-  type: 'MONETARY' | 'IMPRISONMENT' | 'LICENSE';
+  type: 'MONETARY' | 'IMPRISONMENT' | 'LICENSE_REVOCATION';
   amount?: number;
   duration?: string;
   unit?: string;
