@@ -15,4 +15,19 @@ export interface Violation {
   severity: number;
   penalties: Penalty[];
   recommendation: string;
+
+  /** Exact text span or snippet triggering this violation */
+  documentSpan?: { start: number; end: number };
+  /** Extracted snippet of content (text or table cell) */
+  extractedText?: string;
+  /** The type of evidence: text, table, footnote */
+  evidenceType?: 'text' | 'table' | 'footnote';
+  /** Logical explanation why this match triggers the violation */
+  triggerLogic?: string;
+  /** Estimated penalty or exposure */
+  estimatedPenalties?: {
+    monetary?: number;
+    imprisonment?: number;
+    civilFine?: boolean;
+  };
 }
