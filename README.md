@@ -13,6 +13,13 @@ This is the minimal, lethal core repository for NITS - a precision-engineered le
 
 ## Features
 
+✅ **Web-Based GUI** 🎯 NEW
+- Lightweight web interface for document analysis
+- Drag-and-drop file upload
+- Real-time analysis results with visual threat indicators
+- Detailed violation breakdown with severity scoring
+- Easy testing and validation workflow
+
 ✅ **Legal System Harvesting**
 - CFR Title indexing (Securities, Tax Law)
 - Automated provision extraction
@@ -68,7 +75,21 @@ proof/
 
 ## Quick Start
 
-### Option 1: Complete Integration Patch (Recommended)
+### Option 1: GUI Mode (Easiest) 🎯 NEW
+```bash
+# Install dependencies
+npm install
+
+# Start the GUI server
+npm run start:gui
+
+# Open browser to http://localhost:4000
+# Upload documents and view results in real-time
+```
+
+See [GUI_README.md](GUI_README.md) for full GUI documentation.
+
+### Option 2: Complete Integration Patch (Recommended)
 ```bash
 # Install dependencies
 npm install
@@ -82,7 +103,7 @@ ls -l output/
 
 See [QUICKSTART.md](QUICKSTART.md) for detailed instructions.
 
-### Option 2: Core Legal Engine
+### Option 3: Core Legal Engine
 ```bash
 # Run the core legal engine
 npm run start
@@ -185,6 +206,14 @@ The Complete Integration Patch (`deploy/complete_integration_patch.ts`) provides
 - [x] Corpus analysis capabilities
 - [x] API key management with security
 - [x] Production logging system
+
+**Phase 4: GUI Interface (COMPLETE ✅)** 🎯 NEW
+- [x] Web-based GUI server (Express + EJS)
+- [x] File upload with drag-and-drop support
+- [x] Real-time analysis visualization
+- [x] Threat level indicators with color coding
+- [x] Detailed violation breakdown
+- [x] IntegratedNITSCore wrapper class
 
 ## Technology Stack
 

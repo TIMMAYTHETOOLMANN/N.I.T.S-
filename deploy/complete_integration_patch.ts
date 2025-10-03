@@ -599,11 +599,51 @@ async function main(): Promise<void> {
   }
 }
 
-// Execute with comprehensive error handling
-main().catch(err => {
-  console.error('');
-  console.error('💀 UNRECOVERABLE ERROR - SYSTEM HALT');
-  console.error('');
-  console.error(err);
-  process.exit(1);
-});
+/**
+ * IntegratedNITSCore - Wrapper class for GUI integration
+ */
+export class IntegratedNITSCore {
+  private modules: any;
+  private initialized: boolean = false;
+
+  async initialize(): Promise<void> {
+    if (this.initialized) {
+      return;
+    }
+    this.modules = await initializeSystem();
+    this.initialized = true;
+  }
+
+  async analyzeDocument(filePath: string): Promise<{
+    violations: Violation[];
+    overallThreatLevel: number;
+    recommendation: string;
+  }> {
+    if (!this.initialized) {
+      throw new Error('IntegratedNITSCore not initialized. Call initialize() first.');
+    }
+
+    // Analyze the document
+    const analysis = await analyzeDocument(filePath, this.modules);
+    
+    // Generate prosecution package
+    const prosecution = generateProsecutionPackage(analysis.violations);
+
+    return {
+      violations: analysis.violations,
+      overallThreatLevel: prosecution.threatScore,
+      recommendation: prosecution.recommendation
+    };
+  }
+}
+
+// Execute with comprehensive error handling (only when run directly)
+if (require.main === module) {
+  main().catch(err => {
+    console.error('');
+    console.error('💀 UNRECOVERABLE ERROR - SYSTEM HALT');
+    console.error('');
+    console.error(err);
+    process.exit(1);
+  });
+}
