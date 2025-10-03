@@ -6,10 +6,10 @@
     "start": "ts-node deploy/pipeline.ts",
     "test": "jest"
   },
-  "dependencies": {},
   "devDependencies": {
+    "jest": "*",
     "ts-node": "*",
-    "typescript": "*",
-    "jest": "*"
+    "tsx": "^4.20.6",
+    "typescript": "*"
   }
 }
