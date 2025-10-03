@@ -31,7 +31,8 @@ app.post('/upload', upload.single('document'), async (req, res) => {
     // Optionally remove the temp upload after analysis
     res.render('index', { results: result, error: null });
   } catch (err) {
-    res.render('index', { results: null, error: err.toString() });
+    const error = err as Error;
+    res.render('index', { results: null, error: error.toString() });
   }
 });
 

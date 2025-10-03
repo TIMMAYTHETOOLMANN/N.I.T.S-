@@ -5,6 +5,7 @@
   "scripts": {
     "start": "ts-node deploy/pipeline.ts",
     "start:gui": "tsx deploy/gui_server.ts",
+    "start:gui:batch": "tsx deploy/gui_batch_patch.ts",
     "test": "jest"
   },
   "dependencies": {
