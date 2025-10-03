@@ -4,3 +4,5 @@ dist/
 .DS_Store
 *.js.map
 output/*.md
+output/*.html
+output/*.txt
