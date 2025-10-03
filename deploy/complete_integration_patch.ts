@@ -635,6 +635,126 @@ export class IntegratedNITSCore {
       recommendation: prosecution.recommendation
     };
   }
+
+  async analyzeCorpus(docs: Array<{ filePath: string; type?: string; date?: Date }>): Promise<{
+    results: any[];
+    report: string;
+  }> {
+    if (!this.initialized) {
+      throw new Error('IntegratedNITSCore not initialized. Call initialize() first.');
+    }
+
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log('📚 CORPUS ANALYSIS MODE (GUI)');
+    console.log('═══════════════════════════════════════════════════════════');
+    console.log(`📊 Documents: ${docs.length}`);
+    console.log('');
+    
+    const results: any[] = [];
+    
+    for (const doc of docs) {
+      try {
+        console.log(`\n🔍 Analyzing: ${doc.filePath}`);
+        const analysis = await analyzeDocument(doc.filePath, this.modules);
+        const prosecution = generateProsecutionPackage(analysis.violations);
+        
+        results.push({
+          filename: path.basename(doc.filePath),
+          filePath: doc.filePath,
+          violations: analysis.violations,
+          nlpAnalysis: analysis.nlpAnalysis,
+          anomalyAnalysis: analysis.anomalyAnalysis,
+          bayesianRisk: analysis.bayesianRisk,
+          threatScore: prosecution.threatScore,
+          recommendation: prosecution.recommendation
+        });
+        console.log(`✅ Analysis complete for: ${doc.filePath}`);
+      } catch (error) {
+        console.error(`❌ Failed to analyze ${doc.filePath}:`, error);
+        const err = error as Error;
+        results.push({
+          filename: path.basename(doc.filePath),
+          filePath: doc.filePath,
+          error: err.toString()
+        });
+      }
+    }
+
+    // Cross-document correlation
+    if (results.length > 1) {
+      console.log('');
+      console.log('🔗 Running Cross-Document Correlation...');
+      const documentTexts = results.map(r => r.filename);
+      const correlation = this.modules.correlationAnalyzer.analyzeCorrelations(documentTexts);
+      console.log(`   Correlation Score: ${(correlation.correlationScore * 100).toFixed(1)}%`);
+      console.log(`   Linked Documents: ${correlation.linkedDocuments}`);
+    }
+
+    // Generate report
+    const report = this.generateCorpusReport(results);
+
+    console.log('');
+    return { results, report };
+  }
+
+  exportReport(report: string, outputPath: string): void {
+    try {
+      const outputDir = path.dirname(outputPath);
+      if (!fs.existsSync(outputDir)) {
+        fs.mkdirSync(outputDir, { recursive: true });
+      }
+      fs.writeFileSync(outputPath, report, 'utf-8');
+      console.log(`✅ Report exported: ${outputPath}`);
+    } catch (error) {
+      console.error('❌ Failed to export report:', error);
+    }
+  }
+
+  private generateCorpusReport(results: any[]): string {
+    const report = `# NITS Corpus Analysis Report
+
+## Analysis Summary
+- **Documents Analyzed**: ${results.length}
+- **Analysis Date**: ${new Date().toISOString()}
+- **System Version**: NITS Terminator v3.0
+
+## Document Overview
+
+${results.map((r, idx) => {
+  if (r.error) {
+    return `### Document ${idx + 1}: ${r.filename}
+
+**Status**: ❌ Analysis Failed  
+**Error**: ${r.error}
+
+---`;
+  }
+  return `### Document ${idx + 1}: ${r.filename}
+
+**Violations**: ${r.violations ? r.violations.length : 0}  
+**Fraud Score**: ${r.nlpAnalysis ? (r.nlpAnalysis.fraudScore * 100).toFixed(1) : 'N/A'}%  
+**Threat Score**: ${r.threatScore ? r.threatScore.toFixed(1) : 'N/A'}/100  
+**Threat Assessment**: ${r.recommendation || 'N/A'}
+
+---`;
+}).join('\n')}
+
+## Aggregate Statistics
+
+**Total Violations Across Corpus**: ${results.filter(r => r.violations).reduce((sum, r) => sum + r.violations.length, 0)}  
+**Average Fraud Score**: ${results.filter(r => r.nlpAnalysis).length > 0 ? (results.filter(r => r.nlpAnalysis).reduce((sum, r) => sum + r.nlpAnalysis.fraudScore, 0) / results.filter(r => r.nlpAnalysis).length * 100).toFixed(1) : 'N/A'}%  
+**Documents with Criminal Violations**: ${results.filter(r => r.violations && r.violations.some((v: Violation) => v.severity > 70)).length}
+
+## Recommendations
+
+${results.length > 0 ? '- Cross-reference findings across documents\n- Investigate common patterns and entities\n- Prioritize high-severity violations\n- Coordinate enforcement strategy' : 'No documents analyzed'}
+
+---
+
+*Corpus Analysis by NITS Terminator System v3.0*
+`;
+    return report;
+  }
 }
 
 // Execute with comprehensive error handling (only when run directly)

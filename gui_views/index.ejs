@@ -145,6 +145,14 @@
       <button type="submit">🔍 Analyze Document</button>
     </form>
 
+    <form class="upload-form" action="/uploadBatch" method="post" enctype="multipart/form-data">
+      <h2>Batch Upload (Corpus Analysis)</h2>
+      <p>Select multiple documents for corpus-level analysis with cross-document correlation.</p>
+      <input type="file" name="documents" accept=".pdf,.txt,.xlsx,.html" multiple required>
+      <br>
+      <button type="submit">📚 Analyze Batch</button>
+    </form>
+
     <% if (error) { %>
       <div class="error">
         <strong>Error:</strong> <%= error %>
@@ -153,28 +161,68 @@
 
     <% if (results) { %>
       <div class="results">
-        <h2>Analysis Results</h2>
-        
-        <div class="threat-score <%= results.overallThreatLevel >= 70 ? 'threat-high' : results.overallThreatLevel >= 40 ? 'threat-medium' : 'threat-low' %>">
-          <div>Threat Level</div>
-          <%= results.overallThreatLevel.toFixed(1) %> / 100
-        </div>
-
-        <div class="summary-box">
-          <div class="summary-item">
-            <h3>Recommendation</h3>
-            <p><%= results.recommendation %></p>
+        <% if (results.corpus) { %>
+          <!-- Corpus Analysis Results -->
+          <h2>📚 Corpus Analysis Results</h2>
+          
+          <div class="summary-box">
+            <div class="summary-item">
+              <h3>Documents Analyzed</h3>
+              <p style="font-size: 36px; font-weight: bold; margin: 10px 0;"><%= results.corpus.results.length %></p>
+            </div>
+            <div class="summary-item">
+              <h3>Total Violations</h3>
+              <p style="font-size: 36px; font-weight: bold; margin: 10px 0;"><%= results.corpus.results.filter(r => r.violations).reduce((sum, r) => sum + r.violations.length, 0) %></p>
+            </div>
           </div>
-          <div class="summary-item">
-            <h3>Violations Found</h3>
-            <p style="font-size: 36px; font-weight: bold; margin: 10px 0;"><%= results.violations.length %></p>
-          </div>
-        </div>
 
-        <h3>Detected Violations</h3>
-        <% if (results.violations.length === 0) { %>
-          <p style="color: #2e7d32; font-weight: bold;">✅ No violations detected</p>
+          <h3>Document-by-Document Results</h3>
+          <% results.corpus.results.forEach((doc, idx) => { %>
+            <div class="violation">
+              <h3>Document <%= idx + 1 %>: <%= doc.filename %></h3>
+              <% if (doc.error) { %>
+                <p style="color: #d32f2f;">❌ Analysis Failed: <%= doc.error %></p>
+              <% } else { %>
+                <p><span class="info-label">Violations:</span> <%= doc.violations.length %></p>
+                <p><span class="info-label">Threat Score:</span> 
+                  <span class="severity-badge <%= doc.threatScore >= 70 ? 'severity-critical' : doc.threatScore >= 40 ? 'severity-high' : 'severity-low' %>">
+                    <%= doc.threatScore.toFixed(1) %> / 100
+                  </span>
+                </p>
+                <p><span class="info-label">Recommendation:</span> <%= doc.recommendation %></p>
+              <% } %>
+            </div>
+          <% }) %>
+
+          <div style="margin-top: 20px; padding: 20px; background-color: #e3f2fd; border-radius: 4px;">
+            <h3>📊 Report Generated</h3>
+            <p>A detailed corpus analysis report has been exported to: <code>./output/corpus_analysis_report.md</code></p>
+          </div>
+
         <% } else { %>
+          <!-- Single Document Results -->
+          <h2>Analysis Results</h2>
+          
+          <div class="threat-score <%= results.overallThreatLevel >= 70 ? 'threat-high' : results.overallThreatLevel >= 40 ? 'threat-medium' : 'threat-low' %>">
+            <div>Threat Level</div>
+            <%= results.overallThreatLevel.toFixed(1) %> / 100
+          </div>
+
+          <div class="summary-box">
+            <div class="summary-item">
+              <h3>Recommendation</h3>
+              <p><%= results.recommendation %></p>
+            </div>
+            <div class="summary-item">
+              <h3>Violations Found</h3>
+              <p style="font-size: 36px; font-weight: bold; margin: 10px 0;"><%= results.violations.length %></p>
+            </div>
+          </div>
+
+          <h3>Detected Violations</h3>
+          <% if (results.violations.length === 0) { %>
+            <p style="color: #2e7d32; font-weight: bold;">✅ No violations detected</p>
+          <% } else { %>
           <% results.violations.forEach((v, idx) => { %>
             <div class="violation">
               <h3>Violation <%= idx + 1 %>: <%= v.type %></h3>
@@ -242,6 +290,7 @@
               <% } %>
             </div>
           <% }) %>
+        <% } %>
         <% } %>
       </div>
     <% } %>
