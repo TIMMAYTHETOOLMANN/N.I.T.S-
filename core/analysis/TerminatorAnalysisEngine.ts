@@ -28,6 +28,19 @@ interface TerminationReport {
 }
 
 export class TerminatorAnalysisEngine {
+
+  /**
+   * Filter only high‑confidence, statute‑anchored violations
+   */
+  private filterActionableViolations(vios: Violation[]): Violation[] {
+    return vios.filter(v => {
+      return v.confidence >= 80
+        && v.severity >= 60
+        && v.statute !== undefined
+        && v.extractedText !== undefined;
+    });
+  }
+
   private govInfo: GovInfoTerminator;
   private textAnalyzer: ForensicTextAnalyzer;
   private anomalyDetector: AnomalyDetector;
@@ -94,7 +107,10 @@ export class TerminatorAnalysisEngine {
     console.log('✅ TERMINATION COMPLETE');
     console.log(`🔴 Violations found: ${violations.length}`);
     
-    return violations.sort((a, b) => b.severity - a.severity);
+    const actionable = this.filterActionableViolations(violations);
+    // Use actionable only if we have high-confidence violations
+    const finalViolations = actionable.length > 0 ? actionable : violations;
+    return finalViolations.sort((a, b) => b.severity - a.severity);
   }
 
   private async scanSurfaceViolations(content: ExtractedContent): Promise<Violation[]> {
