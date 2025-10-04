@@ -131,12 +131,143 @@
       font-weight: bold;
       color: #666;
     }
+
+    /* Document viewer with side-by-side layout */
+    .analysis-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin: 20px 0;
+    }
+    .document-viewer {
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 20px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .document-viewer h3 {
+      margin-top: 0;
+      color: #333;
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 10px;
+    }
+    .document-text {
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .highlight-violation {
+      background-color: #ffcdd2;
+      border: 2px solid #d32f2f;
+      border-radius: 3px;
+      padding: 2px 4px;
+      margin: 0 2px;
+      cursor: pointer;
+      position: relative;
+    }
+    .highlight-violation:hover {
+      background-color: #ffebee;
+      border-color: #b71c1c;
+    }
+    .highlight-violation::after {
+      content: attr(data-violation-id);
+      position: absolute;
+      top: -25px;
+      left: 0;
+      background-color: #d32f2f;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: bold;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+      z-index: 10;
+    }
+    .highlight-violation:hover::after {
+      opacity: 1;
+    }
+    .violations-panel {
+      background-color: white;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 20px;
+      max-height: 600px;
+      overflow-y: auto;
+    }
+    .violation-item {
+      margin-bottom: 15px;
+      padding: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background-color: #fafafa;
+      cursor: pointer;
+    }
+    .violation-item:hover {
+      background-color: #f0f0f0;
+      border-color: #d32f2f;
+    }
+    .violation-item.active {
+      background-color: #ffebee;
+      border-color: #d32f2f;
+      border-width: 2px;
+    }
+
+    /* New styles for upload history table */
+    #upload-history-section {
+      margin-bottom: 40px;
+    }
+    #upload-history-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    #upload-history-table th, #upload-history-table td {
+      padding: 8px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+    #upload-history-table th {
+      background: #f5f5f5;
+    }
+    #history-detail {
+      margin-top: 20px;
+      padding: 20px;
+      background-color: #e3f2fd;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🔴 NITS Forensic GUI</h1>
     
+    <!-- Upload History Table -->
+    <div id="upload-history-section" style="margin-bottom:40px;">
+      <h2>📂 Upload History</h2>
+      <table id="upload-history-table" style="width:100%; border-collapse:collapse; margin-bottom:20px;">
+        <thead>
+          <tr style="background:#f5f5f5;">
+            <th style="padding:8px; border:1px solid #ccc;">Filename</th>
+            <th style="padding:8px; border:1px solid #ccc;">Upload Time</th>
+            <th style="padding:8px; border:1px solid #ccc;">Threat Score</th>
+            <th style="padding:8px; border:1px solid #ccc;">Violations</th>
+            <th style="padding:8px; border:1px solid #ccc;">Type</th>
+            <th style="padding:8px; border:1px solid #ccc;">File Path</th>
+          </tr>
+        </thead>
+        <tbody id="upload-history-body">
+          <tr><td colspan="6" style="text-align:center; color:#888;">Loading...</td></tr>
+        </tbody>
+      </table>
+      <div id="history-detail"></div>
+    </div>
+
     <form class="upload-form" action="/upload" method="post" enctype="multipart/form-data">
       <h2>Upload Document for Analysis</h2>
       <p>Select a document to analyze for legal violations and fraud patterns.</p>
@@ -219,81 +350,248 @@
             </div>
           </div>
 
-          <h3>Detected Violations</h3>
           <% if (results.violations.length === 0) { %>
+            <h3>Detected Violations</h3>
             <p style="color: #2e7d32; font-weight: bold;">✅ No violations detected</p>
           <% } else { %>
-          <% results.violations.forEach((v, idx) => { %>
-            <div class="violation">
-              <h3>Violation <%= idx + 1 %>: <%= v.type %></h3>
-              
-              <p>
-                <span class="info-label">Statute:</span> <%= v.statute || 'N/A' %>
-              </p>
-              
-              <p>
-                <span class="info-label">Severity:</span> 
-                <span class="severity-badge <%= v.severity >= 80 ? 'severity-critical' : v.severity >= 60 ? 'severity-high' : v.severity >= 40 ? 'severity-medium' : 'severity-low' %>">
-                  <%= v.severity %> / 100
-                </span>
-              </p>
+            <!-- Side-by-Side Document Analysis View -->
+            <div class="analysis-container">
+              <div class="document-viewer">
+                <h3>📄 Document Analysis</h3>
+                <div id="document-text" class="document-text">
+                  <!-- Document text with highlights will be inserted here by JavaScript -->
+                </div>
+              </div>
+              <div class="violations-panel">
+                <h3>⚠️ Detected Violations (<%= results.violations.length %>)</h3>
+                <% results.violations.forEach((v, idx) => { %>
+                  <div class="violation-item" data-violation-index="<%= idx %>" onclick="highlightViolation(<%= idx %>)">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                      <strong>Violation <%= idx + 1 %>: <%= v.type %></strong>
+                      <span class="severity-badge <%= v.severity >= 80 ? 'severity-critical' : v.severity >= 60 ? 'severity-high' : v.severity >= 40 ? 'severity-medium' : 'severity-low' %>">
+                        <%= v.severity %> / 100
+                      </span>
+                    </div>
+                    
+                    <p style="margin: 8px 0;"><strong>Statute:</strong> <%= v.statute || 'N/A' %></p>
+                    
+                    <% if (v.confidence) { %>
+                      <p style="margin: 8px 0;"><strong>Confidence:</strong> <%= v.confidence %>%</p>
+                    <% } %>
 
-              <% if (v.confidence) { %>
-                <p>
-                  <span class="info-label">Confidence:</span> <%= v.confidence %>%
-                </p>
-              <% } %>
+                    <% if (v.description) { %>
+                      <p style="margin: 8px 0;"><strong>Description:</strong> <%= v.description %></p>
+                    <% } %>
 
-              <% if (v.description) { %>
-                <p>
-                  <span class="info-label">Description:</span><br>
-                  <%= v.description %>
-                </p>
-              <% } %>
+                    <% if (v.context) { %>
+                      <p style="margin: 8px 0;"><strong>Context:</strong></p>
+                      <code style="background-color: #f5f5f5; padding: 8px; display: block; border-radius: 4px; font-size: 12px;">
+                        <%= v.context %>
+                      </code>
+                    <% } %>
 
-              <% if (v.extractedText) { %>
-                <p>
-                  <span class="info-label">Extracted Text:</span><br>
-                  <code style="background-color: #f5f5f5; padding: 10px; display: block; border-radius: 4px;">
-                    <%= v.extractedText %>
-                  </code>
-                </p>
-              <% } %>
+                    <% if (v.penalties && v.penalties.length > 0) { %>
+                      <p style="margin: 8px 0;"><strong>Penalties:</strong></p>
+                      <ul style="margin: 4px 0 8px 20px;">
+                        <% v.penalties.forEach(p => { %>
+                          <li style="font-size: 13px;"><%= p.text %></li>
+                        <% }) %>
+                      </ul>
+                    <% } %>
 
-              <% if (v.evidence && v.evidence.length > 0) { %>
-                <p>
-                  <span class="info-label">Evidence:</span>
-                </p>
-                <ul>
-                  <% v.evidence.forEach(e => { %>
-                    <li><%= e %></li>
-                  <% }) %>
-                </ul>
-              <% } %>
-
-              <% if (v.penalties && v.penalties.length > 0) { %>
-                <p>
-                  <span class="info-label">Estimated Penalties:</span>
-                </p>
-                <ul>
-                  <% v.penalties.forEach(p => { %>
-                    <li><%= p.text %></li>
-                  <% }) %>
-                </ul>
-              <% } %>
-
-              <% if (v.recommendation) { %>
-                <p>
-                  <span class="info-label">Recommendation:</span><br>
-                  <%= v.recommendation %>
-                </p>
-              <% } %>
+                    <% if (v.recommendation) { %>
+                      <p style="margin: 8px 0; font-weight: bold; color: #d32f2f;">
+                        <strong>Recommendation:</strong> <%= v.recommendation %>
+                      </p>
+                    <% } %>
+                  </div>
+                <% }) %>
+              </div>
             </div>
-          <% }) %>
-        <% } %>
+          <% } %>
         <% } %>
       </div>
     <% } %>
   </div>
+  <script>
+    // Global variables for document analysis
+    let currentDocumentText = '';
+    let currentViolations = [];
+    let currentFilePath = '';
+
+    // Load document content and violations for highlighting
+    <% if (results && results.violations && results.violations.length > 0) { %>
+      currentViolations = <% if (results && results.violations) { %><%- JSON.stringify(results.violations) %><% } else { %>[]<% } %>;
+      // Get document content from server
+      loadDocumentContent();
+    <% } %>
+
+    async function loadDocumentContent() {
+      try {
+        // Try to get document content from the latest analysis
+        const res = await fetch('/documentContent');
+        if (res.ok) {
+          currentDocumentText = await res.text();
+          renderDocumentWithHighlights();
+        } else {
+          // Fallback: show context from violations
+          renderFallbackDocument();
+        }
+      } catch (error) {
+        console.log('Using fallback document rendering');
+        renderFallbackDocument();
+      }
+    }
+
+    function renderFallbackDocument() {
+      const documentDiv = document.getElementById('document-text');
+      if (!documentDiv) return;
+      
+      // Combine all contexts to create a pseudo-document
+      let combinedText = currentViolations.map((v, idx) => {
+        return `[Section ${idx + 1}]\n${v.context || 'No context available'}\n\n`;
+      }).join('');
+      
+      currentDocumentText = combinedText;
+      renderDocumentWithHighlights();
+    }
+
+    function renderDocumentWithHighlights() {
+      const documentDiv = document.getElementById('document-text');
+      if (!documentDiv || !currentDocumentText) return;
+
+      let highlightedText = currentDocumentText;
+      let highlights = [];
+
+      // Process violations in reverse order to maintain text positions
+      currentViolations.forEach((violation, index) => {
+        if (violation.location && violation.location.start !== undefined && violation.location.end !== undefined) {
+          highlights.push({
+            start: violation.location.start,
+            end: violation.location.end,
+            index: index
+          });
+        } else if (violation.context) {
+          // Try to find context in document
+          const contextIndex = currentDocumentText.indexOf(violation.context);
+          if (contextIndex !== -1) {
+            highlights.push({
+              start: contextIndex,
+              end: contextIndex + violation.context.length,
+              index: index
+            });
+          }
+        }
+      });
+
+      // Sort highlights by start position (reverse for correct insertion)
+      highlights.sort((a, b) => b.start - a.start);
+
+      // Apply highlights
+      highlights.forEach(highlight => {
+        const before = highlightedText.substring(0, highlight.start);
+        const highlightedSection = highlightedText.substring(highlight.start, highlight.end);
+        const after = highlightedText.substring(highlight.end);
+        
+        highlightedText = before + 
+          `<span class="highlight-violation" data-violation-id="V${highlight.index + 1}" data-violation-index="${highlight.index}" onclick="scrollToViolation(${highlight.index})">${highlightedSection}</span>` + 
+          after;
+      });
+
+      documentDiv.innerHTML = highlightedText;
+    }
+
+    function highlightViolation(index) {
+      // Remove active class from all violation items
+      document.querySelectorAll('.violation-item').forEach(item => {
+        item.classList.remove('active');
+      });
+      
+      // Add active class to selected violation
+      const violationItem = document.querySelector(`[data-violation-index="${index}"]`);
+      if (violationItem) {
+        violationItem.classList.add('active');
+      }
+
+      // Highlight corresponding text in document
+      document.querySelectorAll('.highlight-violation').forEach(highlight => {
+        highlight.style.backgroundColor = '#ffcdd2';
+        highlight.style.borderColor = '#d32f2f';
+      });
+
+      const targetHighlight = document.querySelector(`[data-violation-index="${index}"].highlight-violation`);
+      if (targetHighlight) {
+        targetHighlight.style.backgroundColor = '#f44336';
+        targetHighlight.style.borderColor = '#b71c1c';
+        targetHighlight.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
+    function scrollToViolation(index) {
+      const violationItem = document.querySelector(`[data-violation-index="${index}"].violation-item`);
+      if (violationItem) {
+        violationItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        highlightViolation(index);
+      }
+    }
+
+    // Fetch and render upload history
+    async function loadUploadHistory() {
+      const res = await fetch('/uploadHistoryFull');
+      const history = await res.json();
+      const tbody = document.getElementById('upload-history-body');
+      tbody.innerHTML = '';
+      if (!history.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#888;">No uploads yet.</td></tr>';
+        return;
+      }
+      history.slice().reverse().forEach((entry, idx) => {
+        const tr = document.createElement('tr');
+        tr.style.cursor = 'pointer';
+        tr.onclick = () => showHistoryDetail(entry);
+        tr.innerHTML = `
+          <td style='padding:8px; border:1px solid #ccc;'>${entry.originalName || ''}</td>
+          <td style='padding:8px; border:1px solid #ccc;'>${entry.uploadTime ? new Date(entry.uploadTime).toLocaleString() : ''}</td>
+          <td style='padding:8px; border:1px solid #ccc;'>${entry.threatScore != null ? entry.threatScore : ''}</td>
+          <td style='padding:8px; border:1px solid #ccc;'>${entry.violationCount != null ? entry.violationCount : ''}</td>
+          <td style='padding:8px; border:1px solid #ccc;'>${entry.type || ''}</td>
+          <td style='padding:8px; border:1px solid #ccc; font-size:11px;'>${entry.filePath || ''}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function showHistoryDetail(entry) {
+      const detail = document.getElementById('history-detail');
+      let html = `<h3>Document: ${entry.originalName}</h3>`;
+      html += `<p><b>Uploaded:</b> ${new Date(entry.uploadTime).toLocaleString()}<br>`;
+      html += `<b>Threat Score:</b> ${entry.threatScore} / 100<br>`;
+      html += `<b>Violations:</b> ${entry.violationCount}<br>`;
+      html += `<b>File Path:</b> <code>${entry.filePath}</code></p>`;
+      if (entry.violations && entry.violations.length) {
+        html += `<h4>Violations with Context</h4>`;
+        entry.violations.forEach((v, idx) => {
+          html += `<div class='violation' style='margin-bottom:10px;'>`;
+          html += `<b>Type:</b> ${v.type || ''}<br>`;
+          html += `<b>Statute:</b> ${v.statute || ''}<br>`;
+          html += `<b>Severity:</b> ${v.severity || ''}<br>`;
+          html += `<b>Description:</b> ${v.description || ''}<br>`;
+          html += `<b>Context:</b> <code style='background:#f5f5f5; padding:4px 8px; border-radius:4px;'>${v.context || ''}</code><br>`;
+          if (v.location) {
+            html += `<b>Location:</b> start=${v.location.start}, end=${v.location.end}<br>`;
+          }
+          html += `</div>`;
+        });
+      } else {
+        html += `<p>No violations for this document.</p>`;
+      }
+      detail.innerHTML = html;
+      detail.scrollIntoView({behavior:'smooth'});
+    }
+
+    window.onload = function() {
+      loadUploadHistory();
+    };
+  </script>
 </body>
 </html>

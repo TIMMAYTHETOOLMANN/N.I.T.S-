@@ -26,6 +26,9 @@ import { TerminatorAnalysisEngine } from '../core/analysis/TerminatorAnalysisEng
 import { ProsecutionPackage } from '../core/evidence/ProsecutionPackage';
 import { Violation } from '../core/analysis/Violation';
 
+// Ingestion Modules
+import { PdfExtractor } from '../ingestion/pdf/PdfExtractor';
+
 // Enhancement Modules - NLP
 import { ForensicTextAnalyzer, DocumentVector } from '../core/nlp/ForensicTextAnalyzer';
 
@@ -161,11 +164,26 @@ async function analyzeDocument(
   console.log(`📄 File: ${path.basename(filePath)}`);
   console.log('');
   
-  // Read document
+  // Read document with proper file type detection
   let documentText: string;
   try {
-    documentText = fs.readFileSync(filePath, 'utf-8');
-    console.log(`✅ Document loaded: ${documentText.length} characters`);
+    const fileExtension = path.extname(filePath).toLowerCase();
+    
+    if (fileExtension === '.pdf') {
+      console.log('📄 Detected PDF file - using PdfExtractor...');
+      const pdfExtractor = new PdfExtractor();
+      const extractedContent = await pdfExtractor.extractFromFile(filePath);
+      documentText = extractedContent.text;
+      console.log(`✅ PDF extracted: ${documentText.length} characters from ${extractedContent.metadata.pageCount} pages`);
+      
+      // Log metadata for debugging
+      console.log(`   Title: ${extractedContent.metadata.title}`);
+      console.log(`   Author: ${extractedContent.metadata.author}`);
+    } else {
+      // Handle text files and other formats
+      documentText = fs.readFileSync(filePath, 'utf-8');
+      console.log(`✅ Document loaded: ${documentText.length} characters`);
+    }
   } catch (error) {
     console.error('❌ Failed to read document:', error);
     // Fallback to demo document
