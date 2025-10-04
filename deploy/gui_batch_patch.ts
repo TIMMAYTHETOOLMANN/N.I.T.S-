@@ -20,7 +20,14 @@ app.get('/', (req, res) => {
 
 // Utility to append upload metadata to history log
 function logUploadHistory(entry: any) {
-  const historyPath = path.join(__dirname, '..', 'output', 'upload_history.json');
+  const outputDir = path.join(__dirname, '..', 'output');
+  const historyPath = path.join(outputDir, 'upload_history.json');
+  
+  // Ensure output directory exists
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+  
   let history = [];
   if (fs.existsSync(historyPath)) {
     try {
@@ -142,7 +149,7 @@ app.post('/upload', upload.single('document'), async (req, res) => {
       originalName: req.file.originalname,
       uploadTime: new Date().toISOString(),
       filePath,
-      threatScore: result?.threatScore ?? null,
+      threatScore: result?.overallThreatLevel ?? null,
       violationCount: result?.violations?.length ?? null,
       violations: enhancedViolations
     });
@@ -172,14 +179,15 @@ app.post('/uploadBatch', upload.array('documents', 200), async (req, res) => {
     uploaded.forEach((file, idx) => {
       let documentText = '';
       try { documentText = fs.readFileSync(file.filePath, 'utf-8'); } catch {}
+      const doc = corpusResult?.results?.[idx];
       logUploadHistory({
         type: 'batch',
         originalName: file.originalName,
         uploadTime: new Date().toISOString(),
         filePath: file.filePath,
-        threatScore: corpusResult?.documents?.[idx]?.threatScore ?? null,
-        violationCount: corpusResult?.documents?.[idx]?.violations?.length ?? null,
-        violations: extractViolationDetails(corpusResult?.documents?.[idx]?.violations, documentText)
+        threatScore: doc?.threatScore ?? null,
+        violationCount: doc?.violations?.length ?? null,
+        violations: extractViolationDetails(doc?.violations, documentText)
       });
     });
     res.render('index', { results: { corpus: corpusResult }, error: null });

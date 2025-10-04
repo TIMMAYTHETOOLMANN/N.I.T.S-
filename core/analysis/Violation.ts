@@ -30,4 +30,12 @@ export interface Violation {
     imprisonment?: number;
     civilFine?: boolean;
   };
+  /** Context surrounding the violation in the document */
+  context?: string;
+  /** Location in the document where violation occurs */
+  location?: { start: number; end: number } | null;
+  /** All contexts for violations with multiple matches */
+  allContexts?: string[];
+  /** All locations for violations with multiple matches */
+  allLocations?: Array<{ start: number; end: number }>;
 }

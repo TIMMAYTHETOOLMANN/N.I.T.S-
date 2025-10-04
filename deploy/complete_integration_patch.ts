@@ -179,6 +179,38 @@ async function analyzeDocument(
       // Log metadata for debugging
       console.log(`   Title: ${extractedContent.metadata.title}`);
       console.log(`   Author: ${extractedContent.metadata.author}`);
+    } else if (fileExtension === '.xlsx' || fileExtension === '.xls') {
+      console.log('📊 Detected Excel file - using ExcelParser...');
+      const { ExcelParser } = await import('../ingestion/excel/ExcelParser');
+      const excelParser = new ExcelParser();
+      const parsedData = await excelParser.parseFromFile(filePath);
+      
+      // Convert Excel data to text representation
+      const textParts: string[] = [];
+      for (const sheet of parsedData.sheets) {
+        textParts.push(`\n=== Sheet: ${sheet.name} ===\n`);
+        
+        // Add headers
+        if (sheet.headers.length > 0) {
+          textParts.push(`Headers: ${sheet.headers.join(' | ')}\n`);
+        }
+        
+        // Add rows
+        for (const row of sheet.rows) {
+          textParts.push(row.join(' | ') + '\n');
+        }
+      }
+      
+      documentText = textParts.join('');
+      console.log(`✅ Excel parsed: ${parsedData.metadata.sheetCount} sheets, ${parsedData.metadata.totalRows} rows`);
+    } else if (fileExtension === '.html' || fileExtension === '.htm') {
+      console.log('🌐 Detected HTML file - using HtmlExtractor...');
+      const { HtmlExtractor } = await import('../ingestion/html/HtmlExtractor');
+      const htmlExtractor = new HtmlExtractor();
+      const extractedContent = await htmlExtractor.extractFromFile(filePath);
+      documentText = extractedContent.text;
+      console.log(`✅ HTML extracted: ${documentText.length} characters`);
+      console.log(`   Title: ${extractedContent.metadata.title}`);
     } else {
       // Handle text files and other formats
       documentText = fs.readFileSync(filePath, 'utf-8');

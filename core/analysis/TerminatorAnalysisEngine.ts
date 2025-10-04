@@ -164,6 +164,8 @@ export class TerminatorAnalysisEngine {
           location: locations[0] || null,
           allContexts: contexts,
           allLocations: locations,
+          extractedText: contexts[0] || '',  // Populate extractedText for hyperspecific citing
+          evidenceType: 'text',
           confidence: Math.min(matchCount * 15 + pattern.severity, 95),
           severity: pattern.severity,
           penalties: [
@@ -216,6 +218,8 @@ export class TerminatorAnalysisEngine {
         evidence: textVector.suspiciousPatterns,
         context,
         location,
+        extractedText: context,  // Populate extractedText for hyperspecific citing
+        evidenceType: 'text',
         confidence: textVector.fraudScore * 100,
         severity: textVector.riskLevel,
         penalties: [
@@ -294,6 +298,8 @@ export class TerminatorAnalysisEngine {
           evidence: ['Missing required disclosures or patterns'],
           context,
           location,
+          extractedText: context,  // Populate extractedText for hyperspecific citing
+          evidenceType: 'text',
           confidence: 75,
           severity: provision.criminalLiability.score,
           penalties: provision.penalties,
@@ -347,6 +353,8 @@ export class TerminatorAnalysisEngine {
         evidence: anomalies.patterns,
         context,
         location,
+        extractedText: context,  // Populate extractedText for hyperspecific citing
+        evidenceType: 'text',
         confidence: anomalies.confidence * 100,
         severity: anomalies.anomalyScore * 10,
         penalties: [
@@ -394,6 +402,8 @@ export class TerminatorAnalysisEngine {
         evidence: bayesianRisk.patterns,
         context,
         location,
+        extractedText: context,  // Populate extractedText for hyperspecific citing
+        evidenceType: 'text',
         confidence: bayesianRisk.confidence * 100,
         severity: 90,
         penalties: [

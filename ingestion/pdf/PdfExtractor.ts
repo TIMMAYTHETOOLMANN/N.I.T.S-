@@ -28,10 +28,12 @@ export class PdfExtractor {
     try {
       // Dynamic import to handle ES module compatibility
       const pdfParseModule = await import('pdf-parse');
-      const pdfParse = pdfParseModule.default || pdfParseModule;
+      // pdf-parse exports PDFParse and pdf, use the pdf function
+      const pdfParse = (pdfParseModule as any).pdf || pdfParseModule.default || pdfParseModule;
       
       // Convert ArrayBuffer to Buffer for pdf-parse
       const nodeBuffer = Buffer.from(buffer);
+      // Call pdfParse - it's a function
       const data = await pdfParse(nodeBuffer);
       
       console.log(`📄 Successfully extracted ${data.numpages} pages, ${data.text.length} characters`);
@@ -152,7 +154,10 @@ Technical details: File appears to contain PDF objects and streams but text extr
       // Read the PDF file from disk
       const fileBuffer = await fs.promises.readFile(filePath);
       // Convert Node.js Buffer to ArrayBuffer for consistency
-      const arrayBuffer = fileBuffer.buffer.slice(fileBuffer.byteOffset, fileBuffer.byteOffset + fileBuffer.byteLength);
+      const arrayBuffer = fileBuffer.buffer.slice(
+        fileBuffer.byteOffset, 
+        fileBuffer.byteOffset + fileBuffer.byteLength
+      ) as ArrayBuffer;
       return await this.extractFromBuffer(arrayBuffer);
     } catch (error) {
       console.error(`❌ Failed to read PDF file ${filePath}:`, error);
