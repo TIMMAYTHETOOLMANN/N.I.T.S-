@@ -20,7 +20,14 @@ app.get('/', (req, res) => {
 
 // Utility to append upload metadata to history log
 function logUploadHistory(entry: any) {
-  const historyPath = path.join(__dirname, '..', 'output', 'upload_history.json');
+  const outputDir = path.join(__dirname, '..', 'output');
+  const historyPath = path.join(outputDir, 'upload_history.json');
+  
+  // Ensure output directory exists
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+  
   let history = [];
   if (fs.existsSync(historyPath)) {
     try {
