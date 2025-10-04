@@ -14,3 +14,9 @@ uploads/*
 test_*.ts
 !test_ai_investigator.ts
 sample_docs/test_financial.pdf
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+master_dossier.json

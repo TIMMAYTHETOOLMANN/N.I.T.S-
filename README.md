@@ -13,7 +13,14 @@ This is the minimal, lethal core repository for NITS - a precision-engineered le
 
 ## Features
 
-✅ **AI Investigator** 🤖 NEW
+✅ **Deployment & Fix Guide** 🔧 NEW
+- Comprehensive deployment guide with 7 critical fixes
+- Python implementation with enhanced error handling
+- System diagnostics and validation tools
+- Production-ready with all security fixes applied
+- See [DEPLOYMENT_FIX_GUIDE.md](DEPLOYMENT_FIX_GUIDE.md)
+
+✅ **AI Investigator** 🤖
 - GPT-4 powered intelligent document analysis
 - Automated SEC, DOJ, IRS violation detection
 - Legal statute citation and recommendations
@@ -83,7 +90,24 @@ proof/
 
 ## Quick Start
 
-### Option 1: AI Investigator Mode 🤖 NEW
+### Option 1: Python Deployment (Production Ready) 🔧 NEW
+```bash
+# Install Python dependencies
+pip install PyMuPDF pandas scikit-learn fuzzywuzzy python-Levenshtein nltk
+
+# Run system diagnostics
+python diagnostics.py
+
+# Run critical fixes demo
+python critical_fixes.py
+
+# Check deployment guide
+cat DEPLOYMENT_FIX_GUIDE.md
+```
+
+See [DEPLOYMENT_FIX_GUIDE.md](DEPLOYMENT_FIX_GUIDE.md) for complete deployment instructions.
+
+### Option 2: AI Investigator Mode 🤖
 ```bash
 # Install dependencies
 npm install
@@ -101,7 +125,7 @@ cat output/ai_test_document.md
 
 See [AI_INVESTIGATOR_README.md](AI_INVESTIGATOR_README.md) for full documentation.
 
-### Option 2: GUI Mode (Easiest) 🎯
+### Option 3: GUI Mode (Easiest) 🎯
 ```bash
 # Install dependencies
 npm install
@@ -115,7 +139,7 @@ npm run start:gui
 
 See [GUI_README.md](GUI_README.md) for full GUI documentation.
 
-### Option 3: Complete Integration Patch (Recommended)
+### Option 4: Complete Integration Patch (TypeScript)
 ```bash
 # Install dependencies
 npm install
@@ -129,7 +153,7 @@ ls -l output/
 
 See [QUICKSTART.md](QUICKSTART.md) for detailed instructions.
 
-### Option 4: Core Legal Engine
+### Option 5: Core Legal Engine
 ```bash
 # Run the core legal engine
 npm run start
