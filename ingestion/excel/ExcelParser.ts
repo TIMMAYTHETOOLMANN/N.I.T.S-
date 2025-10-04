@@ -1,4 +1,6 @@
 // Excel spreadsheet parsing for financial data extraction
+import * as XLSX from 'xlsx';
+import * as fs from 'fs';
 
 export interface ExcelSheet {
   name: string;
@@ -16,28 +18,67 @@ export interface ParsedExcelData {
 
 export class ExcelParser {
   /**
-   * Parse Excel workbook from buffer
-   * In production, would use xlsx or exceljs library
+   * Parse Excel workbook from buffer using xlsx library
    */
   async parseFromBuffer(buffer: ArrayBuffer): Promise<ParsedExcelData> {
     console.log('📊 Parsing Excel workbook...');
     
-    // Simulated parsing
-    // Production would use xlsx library
-    return {
-      sheets: [{
-        name: 'Sheet1',
-        headers: ['Date', 'Amount', 'Description'],
-        rows: [
-          ['2024-01-01', 1000000, 'Transaction 1'],
-          ['2024-01-02', 2000000, 'Transaction 2']
-        ]
-      }],
-      metadata: {
-        sheetCount: 1,
-        totalRows: 2
+    try {
+      // Convert ArrayBuffer to Buffer for xlsx
+      const nodeBuffer = Buffer.from(buffer);
+      
+      // Parse the workbook
+      const workbook = XLSX.read(nodeBuffer, { type: 'buffer' });
+      
+      const sheets: ExcelSheet[] = [];
+      let totalRows = 0;
+      
+      // Process each sheet
+      for (const sheetName of workbook.SheetNames) {
+        const worksheet = workbook.Sheets[sheetName];
+        
+        // Convert sheet to JSON array
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+        
+        if (jsonData.length === 0) {
+          continue;
+        }
+        
+        // First row as headers
+        const headers = jsonData[0]?.map(h => String(h || '')) || [];
+        
+        // Remaining rows as data
+        const rows = jsonData.slice(1);
+        
+        sheets.push({
+          name: sheetName,
+          headers,
+          rows
+        });
+        
+        totalRows += rows.length;
       }
-    };
+      
+      console.log(`✅ Excel parsed: ${sheets.length} sheets, ${totalRows} total rows`);
+      
+      return {
+        sheets,
+        metadata: {
+          sheetCount: sheets.length,
+          totalRows
+        }
+      };
+    } catch (error) {
+      console.error('❌ Failed to parse Excel:', error);
+      // Return empty result on failure
+      return {
+        sheets: [],
+        metadata: {
+          sheetCount: 0,
+          totalRows: 0
+        }
+      };
+    }
   }
 
   /**
@@ -46,8 +87,27 @@ export class ExcelParser {
   async parseFromFile(filePath: string): Promise<ParsedExcelData> {
     console.log(`📊 Parsing Excel from: ${filePath}`);
     
-    // Would use fs.readFile + parseFromBuffer in production
-    return this.parseFromBuffer(new ArrayBuffer(0));
+    try {
+      // Read file
+      const fileBuffer = await fs.promises.readFile(filePath);
+      
+      // Convert to ArrayBuffer
+      const arrayBuffer = fileBuffer.buffer.slice(
+        fileBuffer.byteOffset,
+        fileBuffer.byteOffset + fileBuffer.byteLength
+      ) as ArrayBuffer;
+      
+      return await this.parseFromBuffer(arrayBuffer);
+    } catch (error) {
+      console.error(`❌ Failed to read Excel file ${filePath}:`, error);
+      return {
+        sheets: [],
+        metadata: {
+          sheetCount: 0,
+          totalRows: 0
+        }
+      };
+    }
   }
 
   /**
