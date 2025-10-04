@@ -20,6 +20,67 @@ export interface PDFPageContent {
 
 export class PdfExtractor {
   /**
+   * Detect if text contains binary content or raw PDF structures
+   */
+  private containsBinaryContent(text: string): boolean {
+    // Check for null bytes (definitive binary indicator)
+    if (text.includes('\x00')) {
+      return true;
+    }
+    
+    // Check for raw PDF structures
+    if (text.includes('%PDF') || 
+        text.includes('endobj') || 
+        text.includes('endstream') ||
+        text.includes('/Type /Catalog') ||
+        text.includes('xref')) {
+      return true;
+    }
+    
+    // Check for high proportion of non-printable characters
+    const nonPrintableCount = (text.match(/[^\x20-\x7E\r\n\t]/g) || []).length;
+    const nonPrintableRatio = nonPrintableCount / text.length;
+    
+    if (nonPrintableRatio > 0.3) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Validate and sanitize extracted text
+   */
+  private validateExtractedText(text: string, source: string): string {
+    // Check if the text contains binary content
+    if (this.containsBinaryContent(text)) {
+      console.log(`⚠️  Binary content detected in ${source} - replacing with error message`);
+      return `ERROR: Unable to extract readable text from PDF document.
+
+The PDF file could not be properly parsed. This may be due to:
+- Encrypted or password-protected PDF
+- Scanned images without OCR text layer
+- Corrupted or malformed PDF structure
+- Unsupported PDF features
+
+Please ensure the PDF:
+1. Is not password-protected
+2. Contains actual text (not just scanned images)
+3. Is not corrupted
+4. Uses standard PDF formatting
+
+For scanned documents, please use OCR software to convert images to text before uploading.`;
+    }
+    
+    // Check for empty or very short text
+    if (text.trim().length < 10) {
+      return 'ERROR: PDF document appears to be empty or contains no extractable text. The file may be image-based or corrupted.';
+    }
+    
+    return text;
+  }
+
+  /**
    * Extract content from PDF buffer using pdf-parse
    */
   async extractFromBuffer(buffer: ArrayBuffer): Promise<ExtractedPDFContent> {
@@ -38,16 +99,19 @@ export class PdfExtractor {
       
       console.log(`📄 Successfully extracted ${data.numpages} pages, ${data.text.length} characters`);
       
+      // Validate extracted text to ensure it's not binary
+      const validatedText = this.validateExtractedText(data.text, 'pdf-parse');
+      
       // Split text into pages (rough estimation)
       const pages: PDFPageContent[] = [];
       if (data.numpages > 1) {
-        const textPerPage = Math.ceil(data.text.length / data.numpages);
+        const textPerPage = Math.ceil(validatedText.length / data.numpages);
         for (let i = 0; i < data.numpages; i++) {
           const start = i * textPerPage;
-          const end = Math.min(start + textPerPage, data.text.length);
+          const end = Math.min(start + textPerPage, validatedText.length);
           pages.push({
             pageNumber: i + 1,
-            text: data.text.substring(start, end),
+            text: validatedText.substring(start, end),
             tables: [],
             footnotes: []
           });
@@ -55,14 +119,14 @@ export class PdfExtractor {
       } else {
         pages.push({
           pageNumber: 1,
-          text: data.text,
+          text: validatedText,
           tables: [],
           footnotes: []
         });
       }
       
       return {
-        text: data.text,
+        text: validatedText,
         metadata: {
           pageCount: data.numpages,
           title: data.info?.Title || 'PDF Document',
@@ -74,8 +138,11 @@ export class PdfExtractor {
       console.error('❌ Failed to extract PDF content:', error);
       // Fallback to basic text extraction attempt
       const fallbackText = this.attemptBasicTextExtraction(buffer);
+      // Validate fallback text to ensure no binary content passes through
+      const validatedFallbackText = this.validateExtractedText(fallbackText, 'fallback extraction');
+      
       return {
-        text: fallbackText,
+        text: validatedFallbackText,
         metadata: {
           pageCount: 1,
           title: 'PDF Document (Partial Extraction)',
@@ -83,7 +150,7 @@ export class PdfExtractor {
         },
         pages: [{
           pageNumber: 1,
-          text: fallbackText,
+          text: validatedFallbackText,
           tables: [],
           footnotes: []
         }]
@@ -93,29 +160,21 @@ export class PdfExtractor {
   
   /**
    * Fallback method for basic text extraction when pdf-parse fails
+   * This method attempts to extract readable text but will NEVER return binary content
    */
   private attemptBasicTextExtraction(buffer: ArrayBuffer): string {
     try {
       // Convert buffer to string and look for readable text patterns
       const text = new TextDecoder('utf-8', { fatal: false }).decode(buffer);
       
-      // Check if this looks like a PDF file with raw content
-      if (text.includes('%PDF') || text.includes('/Type /Catalog') || text.includes('obj')) {
-        console.log('⚠️  Detected raw PDF content - pdf-parse library failed to load properly');
-        return `ERROR: PDF parsing library failed to initialize. Raw PDF content detected but cannot be processed.
-
-The system attempted to extract text from a PDF document but the pdf-parse library is not functioning correctly. 
-This may be due to:
-- Module loading issues with pdf-parse
-- Incompatible PDF format
-- Corrupted PDF file
-
-Please ensure the PDF file is valid and the pdf-parse dependency is properly installed.
-
-Technical details: File appears to contain PDF objects and streams but text extraction failed.`;
+      // Check if this looks like raw PDF content
+      if (this.containsBinaryContent(text)) {
+        console.log('⚠️  Raw PDF binary content detected - cannot extract text');
+        // Return clean error message, never binary content
+        return 'ERROR: PDF text extraction failed - binary content detected';
       }
       
-      // Extract readable text segments (basic heuristic)
+      // Extract readable text segments using aggressive filtering
       const readableSegments: string[] = [];
       const lines = text.split(/[\r\n]+/);
       
@@ -123,7 +182,7 @@ Technical details: File appears to contain PDF objects and streams but text extr
         // Look for lines that contain mostly readable ASCII characters
         const cleanLine = line.replace(/[^\x20-\x7E]/g, ' ').trim();
         if (cleanLine.length > 10 && /[a-zA-Z]/.test(cleanLine)) {
-          // Skip PDF structural elements
+          // Skip PDF structural elements - be very aggressive
           if (!cleanLine.startsWith('/') && 
               !cleanLine.includes('obj') && 
               !cleanLine.includes('endobj') &&
@@ -131,14 +190,29 @@ Technical details: File appears to contain PDF objects and streams but text extr
               !cleanLine.includes('endstream') &&
               !cleanLine.includes('<< /') &&
               !cleanLine.includes('>> <<') &&
-              !cleanLine.includes('/Length')) {
+              !cleanLine.includes('/Length') &&
+              !cleanLine.includes('/Type') &&
+              !cleanLine.includes('xref') &&
+              !cleanLine.includes('trailer') &&
+              !cleanLine.includes('startxref')) {
             readableSegments.push(cleanLine);
           }
         }
       }
       
-      const extractedText = readableSegments.join(' ').substring(0, 1000); // Limit length
-      return extractedText.length > 50 ? extractedText : 'Unable to extract readable text from this document. The file may be encrypted, image-based, or in an unsupported format.';
+      const extractedText = readableSegments.join(' ').trim();
+      
+      // If we got some readable text, limit and return it
+      if (extractedText.length > 50) {
+        // Double-check it doesn't contain binary markers
+        const limitedText = extractedText.substring(0, 1000);
+        if (!this.containsBinaryContent(limitedText)) {
+          return limitedText;
+        }
+      }
+      
+      // If we couldn't extract anything clean, return clear error message
+      return 'Unable to extract readable text from this document. The file may be encrypted, image-based, or in an unsupported format.';
     } catch {
       return 'PDF content could not be extracted - please ensure file is a valid PDF document';
     }
@@ -161,8 +235,9 @@ Technical details: File appears to contain PDF objects and streams but text extr
       return await this.extractFromBuffer(arrayBuffer);
     } catch (error) {
       console.error(`❌ Failed to read PDF file ${filePath}:`, error);
+      const errorMessage = `Failed to read PDF file: ${error instanceof Error ? error.message : 'Unknown error'}`;
       return {
-        text: `Failed to read PDF file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        text: errorMessage,
         metadata: {
           pageCount: 0,
           title: 'Error Reading PDF',
