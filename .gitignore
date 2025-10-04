@@ -10,3 +10,7 @@ output/*.json
 uploads/*
 !uploads/.gitkeep
 .env
+# Test files
+test_*.ts
+!test_ai_investigator.ts
+sample_docs/test_financial.pdf
