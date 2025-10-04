@@ -1,0 +1,368 @@
+[
+  {
+    "type": "single",
+    "originalName": "test_report.html",
+    "uploadTime": "2025-10-04T02:50:46.990Z",
+    "filePath": "uploads/906c49d7336740ff479dca743c0c4cf2",
+    "threatScore": 50,
+    "violationCount": 3,
+    "violations": [
+      {
+        "type": "INSIDER_TRADING",
+        "statute": "15 U.S.C. § 78u-1",
+        "description": "Insider trading pattern detected",
+        "evidence": [
+          "Found 1 instances in document"
+        ],
+        "context": "ns material information about insider trading activities that occurred duri",
+        "location": {
+          "start": 265,
+          "end": 280
+        },
+        "allContexts": [
+          "ns material information about insider trading activities that occurred duri"
+        ],
+        "allLocations": [
+          {
+            "start": 265,
+            "end": 280
+          }
+        ],
+        "extractedText": "ns material information about insider trading activities that occurred duri",
+        "evidenceType": "text",
+        "confidence": 95,
+        "severity": 90,
+        "penalties": [
+          {
+            "type": "MONETARY",
+            "amount": 5000000,
+            "text": "$5M potential fine"
+          }
+        ],
+        "recommendation": "IMMEDIATE_INVESTIGATION"
+      },
+      {
+        "type": "FRAUD_INDICATOR",
+        "statute": "15 U.S.C. § 78j(b)",
+        "description": "Securities fraud indicators detected",
+        "evidence": [
+          "Found 2 instances in document"
+        ],
+        "context": ">\n    <p>Several instances of fraud and misrepresentation were id",
+        "location": {
+          "start": 721,
+          "end": 726
+        },
+        "allContexts": [
+          ">\n    <p>Several instances of fraud and misrepresentation were id",
+          "everal instances of fraud and misrepresentation were identified. Non-com"
+        ],
+        "allLocations": [
+          {
+            "start": 721,
+            "end": 726
+          },
+          {
+            "start": 731,
+            "end": 743
+          }
+        ],
+        "extractedText": ">\n    <p>Several instances of fraud and misrepresentation were id",
+        "evidenceType": "text",
+        "confidence": 95,
+        "severity": 85,
+        "penalties": [
+          {
+            "type": "MONETARY",
+            "amount": 5000000,
+            "text": "$5M potential fine"
+          }
+        ],
+        "recommendation": "IMMEDIATE_INVESTIGATION"
+      },
+      {
+        "type": "COMPLIANCE_VIOLATION",
+        "statute": "SEC Rule 10b-5",
+        "description": "Regulatory compliance violation",
+        "evidence": [
+          "Found 2 instances in document"
+        ],
+        "context": "presentation were identified. Non-compliance with SEC regulations regardin",
+        "location": {
+          "start": 766,
+          "end": 780
+        },
+        "allContexts": [
+          "presentation were identified. Non-compliance with SEC regulations regardin",
+          "d parties that may constitute violations of securities laws were not "
+        ],
+        "allLocations": [
+          {
+            "start": 766,
+            "end": 780
+          },
+          {
+            "start": 957,
+            "end": 966
+          }
+        ],
+        "extractedText": "presentation were identified. Non-compliance with SEC regulations regardin",
+        "evidenceType": "text",
+        "confidence": 95,
+        "severity": 70,
+        "penalties": [
+          {
+            "type": "MONETARY",
+            "amount": 5000000,
+            "text": "$5M potential fine"
+          }
+        ],
+        "recommendation": "ENHANCED_MONITORING"
+      }
+    ]
+  },
+  {
+    "type": "batch",
+    "originalName": "test_document.txt",
+    "uploadTime": "2025-10-04T02:51:23.214Z",
+    "filePath": "uploads/6034bbe9743dfb816ca64c88bdd44b46",
+    "threatScore": 50,
+    "violationCount": 3,
+    "violations": [
+      {
+        "type": "INSIDER_TRADING",
+        "statute": "15 U.S.C. § 78u-1",
+        "description": "Insider trading pattern detected",
+        "evidence": [
+          "Found 2 instances in document"
+        ],
+        "context": "t disclosed in prior filings. Insider trading activities were detected but ",
+        "location": {
+          "start": 577,
+          "end": 592
+        },
+        "allContexts": [
+          "t disclosed in prior filings. Insider trading activities were detected but ",
+          "or to negative announcements. Insider trading patterns indicate knowledge o"
+        ],
+        "allLocations": [
+          {
+            "start": 577,
+            "end": 592
+          },
+          {
+            "start": 1757,
+            "end": 1772
+          }
+        ],
+        "extractedText": "t disclosed in prior filings. Insider trading activities were detected but ",
+        "evidenceType": "text",
+        "confidence": 95,
+        "severity": 90,
+        "penalties": [
+          {
+            "type": "MONETARY",
+            "amount": 5000000,
+            "text": "$5M potential fine"
+          }
+        ],
+        "recommendation": "IMMEDIATE_INVESTIGATION"
+      },
+      {
+        "type": "FRAUD_INDICATOR",
+        "statute": "15 U.S.C. § 78j(b)",
+        "description": "Securities fraud indicators detected",
+        "evidence": [
+          "Found 2 instances in document"
+        ],
+        "context": " period. Several instances of fraudulent misrepresentation were i",
+        "location": {
+          "start": 1018,
+          "end": 1023
+        },
+        "allContexts": [
+          " period. Several instances of fraudulent misrepresentation were i",
+          "veral instances of fraudulent misrepresentation were identified in previ"
+        ],
+        "allLocations": [
+          {
+            "start": 1018,
+            "end": 1023
+          },
+          {
+            "start": 1029,
+            "end": 1041
+          }
+        ],
+        "extractedText": " period. Several instances of fraudulent misrepresentation were i",
+        "evidenceType": "text",
+        "confidence": 95,
+        "severity": 85,
+        "penalties": [
+          {
+            "type": "MONETARY",
+            "amount": 5000000,
+            "text": "$5M potential fine"
+          }
+        ],
+        "recommendation": "IMMEDIATE_INVESTIGATION"
+      },
+      {
+        "type": "COMPLIANCE_VIOLATION",
+        "statute": "SEC Rule 10b-5",
+        "description": "Regulatory compliance violation",
+        "evidence": [
+          "Found 1 instances in document"
+        ],
+        "context": "sure of material information. Non-compliance with securities laws was note",
+        "location": {
+          "start": 925,
+          "end": 939
+        },
+        "allContexts": [
+          "sure of material information. Non-compliance with securities laws was note"
+        ],
+        "allLocations": [
+          {
+            "start": 925,
+            "end": 939
+          }
+        ],
+        "extractedText": "sure of material information. Non-compliance with securities laws was note",
+        "evidenceType": "text",
+        "confidence": 85,
+        "severity": 70,
+        "penalties": [
+          {
+            "type": "MONETARY",
+            "amount": 5000000,
+            "text": "$5M potential fine"
+          }
+        ],
+        "recommendation": "ENHANCED_MONITORING"
+      }
+    ]
+  },
+  {
+    "type": "batch",
+    "originalName": "test_report.html",
+    "uploadTime": "2025-10-04T02:51:23.215Z",
+    "filePath": "uploads/f42ffdae4ab3bb4b6c03e7743dd2f40b",
+    "threatScore": 50,
+    "violationCount": 3,
+    "violations": [
+      {
+        "type": "INSIDER_TRADING",
+        "statute": "15 U.S.C. § 78u-1",
+        "description": "Insider trading pattern detected",
+        "evidence": [
+          "Found 1 instances in document"
+        ],
+        "context": "ns material information about insider trading activities that occurred duri",
+        "location": {
+          "start": 265,
+          "end": 280
+        },
+        "allContexts": [
+          "ns material information about insider trading activities that occurred duri"
+        ],
+        "allLocations": [
+          {
+            "start": 265,
+            "end": 280
+          }
+        ],
+        "extractedText": "ns material information about insider trading activities that occurred duri",
+        "evidenceType": "text",
+        "confidence": 95,
+        "severity": 90,
+        "penalties": [
+          {
+            "type": "MONETARY",
+            "amount": 5000000,
+            "text": "$5M potential fine"
+          }
+        ],
+        "recommendation": "IMMEDIATE_INVESTIGATION"
+      },
+      {
+        "type": "FRAUD_INDICATOR",
+        "statute": "15 U.S.C. § 78j(b)",
+        "description": "Securities fraud indicators detected",
+        "evidence": [
+          "Found 2 instances in document"
+        ],
+        "context": ">\n    <p>Several instances of fraud and misrepresentation were id",
+        "location": {
+          "start": 721,
+          "end": 726
+        },
+        "allContexts": [
+          ">\n    <p>Several instances of fraud and misrepresentation were id",
+          "everal instances of fraud and misrepresentation were identified. Non-com"
+        ],
+        "allLocations": [
+          {
+            "start": 721,
+            "end": 726
+          },
+          {
+            "start": 731,
+            "end": 743
+          }
+        ],
+        "extractedText": ">\n    <p>Several instances of fraud and misrepresentation were id",
+        "evidenceType": "text",
+        "confidence": 95,
+        "severity": 85,
+        "penalties": [
+          {
+            "type": "MONETARY",
+            "amount": 5000000,
+            "text": "$5M potential fine"
+          }
+        ],
+        "recommendation": "IMMEDIATE_INVESTIGATION"
+      },
+      {
+        "type": "COMPLIANCE_VIOLATION",
+        "statute": "SEC Rule 10b-5",
+        "description": "Regulatory compliance violation",
+        "evidence": [
+          "Found 2 instances in document"
+        ],
+        "context": "presentation were identified. Non-compliance with SEC regulations regardin",
+        "location": {
+          "start": 766,
+          "end": 780
+        },
+        "allContexts": [
+          "presentation were identified. Non-compliance with SEC regulations regardin",
+          "d parties that may constitute violations of securities laws were not "
+        ],
+        "allLocations": [
+          {
+            "start": 766,
+            "end": 780
+          },
+          {
+            "start": 957,
+            "end": 966
+          }
+        ],
+        "extractedText": "presentation were identified. Non-compliance with SEC regulations regardin",
+        "evidenceType": "text",
+        "confidence": 95,
+        "severity": 70,
+        "penalties": [
+          {
+            "type": "MONETARY",
+            "amount": 5000000,
+            "text": "$5M potential fine"
+          }
+        ],
+        "recommendation": "ENHANCED_MONITORING"
+      }
+    ]
+  }
+]
