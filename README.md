@@ -13,7 +13,14 @@ This is the minimal, lethal core repository for NITS - a precision-engineered le
 
 ## Features
 
-✅ **Web-Based GUI** 🎯 NEW
+✅ **AI Investigator** 🤖 NEW
+- GPT-4 powered intelligent document analysis
+- Automated SEC, DOJ, IRS violation detection
+- Legal statute citation and recommendations
+- Integrates seamlessly with existing analysis pipeline
+- See [AI_INVESTIGATOR_README.md](AI_INVESTIGATOR_README.md)
+
+✅ **Web-Based GUI** 🎯
 - Lightweight web interface for document analysis
 - Drag-and-drop file upload
 - Real-time analysis results with visual threat indicators
@@ -52,7 +59,8 @@ core/
 │   └── LegalProvision.ts
 ├── analysis/         # Violation detection engine
 │   ├── TerminatorAnalysisEngine.ts
-│   └── Violation.ts
+│   ├── Violation.ts
+│   └── AIInvestigator.ts     # 🤖 NEW: GPT-4 AI analysis
 ├── nlp/             # Forensic text analysis
 │   ├── ForensicTextAnalyzer.ts
 │   └── BlacklightAnalyzer.ts
@@ -75,7 +83,25 @@ proof/
 
 ## Quick Start
 
-### Option 1: GUI Mode (Easiest) 🎯 NEW
+### Option 1: AI Investigator Mode 🤖 NEW
+```bash
+# Install dependencies
+npm install
+
+# Configure API key (copy .env.example to .env and add your OpenAI key)
+cp .env.example .env
+# Edit .env and set OPENAI_API_KEY=your_key_here
+
+# Run AI analysis test
+npx tsx test_ai_investigator.ts
+
+# Check AI report
+cat output/ai_test_document.md
+```
+
+See [AI_INVESTIGATOR_README.md](AI_INVESTIGATOR_README.md) for full documentation.
+
+### Option 2: GUI Mode (Easiest) 🎯
 ```bash
 # Install dependencies
 npm install
@@ -89,7 +115,7 @@ npm run start:gui
 
 See [GUI_README.md](GUI_README.md) for full GUI documentation.
 
-### Option 2: Complete Integration Patch (Recommended)
+### Option 3: Complete Integration Patch (Recommended)
 ```bash
 # Install dependencies
 npm install
@@ -103,13 +129,34 @@ ls -l output/
 
 See [QUICKSTART.md](QUICKSTART.md) for detailed instructions.
 
-### Option 3: Core Legal Engine
+### Option 4: Core Legal Engine
 ```bash
 # Run the core legal engine
 npm run start
 ```
 
 ## Usage Example
+
+### AI Investigator Integration 🤖
+
+```typescript
+import { IntegratedNITSCore } from './deploy/complete_integration_patch';
+
+// Initialize NITS Core with AI capabilities
+const nits = new IntegratedNITSCore();
+await nits.initialize();
+
+// Run AI-powered analysis
+await nits.analyzeUsingAI('./sample_docs/test_document.txt');
+// Output: ./output/ai_test_document.md
+
+// Or run traditional analysis
+const result = await nits.analyzeDocument('./sample_docs/test_document.txt');
+console.log(`Threat Level: ${result.overallThreatLevel}/100`);
+console.log(`Violations: ${result.violations.length}`);
+```
+
+### Core Engine Usage
 
 ```typescript
 import { TerminatorAnalysisEngine } from './core/analysis/TerminatorAnalysisEngine';

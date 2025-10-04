@@ -9,3 +9,4 @@ output/*.txt
 output/*.json
 uploads/*
 !uploads/.gitkeep
+.env
