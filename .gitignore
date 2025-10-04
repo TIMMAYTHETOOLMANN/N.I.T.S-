@@ -6,5 +6,6 @@ dist/
 output/*.md
 output/*.html
 output/*.txt
+output/*.json
 uploads/*
 !uploads/.gitkeep
