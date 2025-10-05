@@ -383,7 +383,41 @@
                       <p style="margin: 8px 0;"><strong>Description:</strong> <%= v.description %></p>
                     <% } %>
 
-                    <% if (v.context) { %>
+                    <% if (v.extractedText) { %>
+                      <p style="margin: 8px 0;"><strong>📄 Extracted Text:</strong></p>
+                      <blockquote style="background-color: #fffbf0; padding: 8px; margin: 4px 0; border-left: 4px solid #ffa726; border-radius: 4px; font-size: 12px;">
+                        "<%= v.extractedText %>"
+                      </blockquote>
+                    <% } %>
+
+                    <% if (v.location) { %>
+                      <p style="margin: 8px 0; font-size: 12px; color: #666;">
+                        <strong>📍 Location:</strong> Characters <%= v.location.start %>-<%= v.location.end %>
+                        <% if (v.evidenceType) { %> | <strong>Type:</strong> <%= v.evidenceType %><% } %>
+                      </p>
+                    <% } %>
+
+                    <% if (v.triggerLogic) { %>
+                      <p style="margin: 8px 0;"><strong>💡 Trigger Logic:</strong></p>
+                      <p style="background-color: #f0f7ff; padding: 8px; margin: 4px 0; border-radius: 4px; font-size: 12px; border-left: 4px solid #2196f3;">
+                        <%= v.triggerLogic %>
+                      </p>
+                    <% } %>
+
+                    <% if (v.estimatedPenalties) { %>
+                      <p style="margin: 8px 0;"><strong>⚖️ Estimated Penalties:</strong></p>
+                      <ul style="margin: 4px 0 8px 20px; font-size: 13px;">
+                        <% if (v.estimatedPenalties.monetary) { %>
+                          <li><strong>Monetary:</strong> $<%= v.estimatedPenalties.monetary.toLocaleString() %></li>
+                        <% } %>
+                        <% if (v.estimatedPenalties.imprisonment) { %>
+                          <li><strong>Imprisonment:</strong> Up to <%= v.estimatedPenalties.imprisonment %> years</li>
+                        <% } %>
+                        <li><strong>Civil Fine:</strong> <%= v.estimatedPenalties.civilFine ? 'Yes' : 'No' %></li>
+                      </ul>
+                    <% } %>
+
+                    <% if (v.context && !v.extractedText) { %>
                       <p style="margin: 8px 0;"><strong>Context:</strong></p>
                       <code style="background-color: #f5f5f5; padding: 8px; display: block; border-radius: 4px; font-size: 12px;">
                         <%= v.context %>
@@ -391,7 +425,7 @@
                     <% } %>
 
                     <% if (v.penalties && v.penalties.length > 0) { %>
-                      <p style="margin: 8px 0;"><strong>Penalties:</strong></p>
+                      <p style="margin: 8px 0;"><strong>Statutory Penalties:</strong></p>
                       <ul style="margin: 4px 0 8px 20px;">
                         <% v.penalties.forEach(p => { %>
                           <li style="font-size: 13px;"><%= p.text %></li>

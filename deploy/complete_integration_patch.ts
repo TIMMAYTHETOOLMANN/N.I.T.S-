@@ -488,7 +488,22 @@ ${analysis.violations.map((v: Violation, idx: number) => `
 - **Description**: ${v.description}
 - **Recommendation**: ${v.recommendation}
 
-**Evidence**:
+${v.extractedText ? `**📄 Extracted Text**:
+> "${v.extractedText}"
+
+` : ''}${v.location ? `**📍 Document Location**: Characters ${v.location.start}-${v.location.end}
+
+` : ''}${v.evidenceType ? `**🔍 Evidence Type**: ${v.evidenceType}
+
+` : ''}${v.triggerLogic ? `**💡 Trigger Logic**:
+${v.triggerLogic}
+
+` : ''}${v.estimatedPenalties ? `**⚖️ Estimated Penalties**:
+- Monetary: $${(v.estimatedPenalties.monetary || 0).toLocaleString()}
+- Imprisonment: ${v.estimatedPenalties.imprisonment || 0} years
+- Civil Fine: ${v.estimatedPenalties.civilFine ? 'Yes' : 'No'}
+
+` : ''}**Evidence**:
 ${v.evidence.map((e: string) => `- ${e}`).join('\n')}
 
 **Penalties**:
