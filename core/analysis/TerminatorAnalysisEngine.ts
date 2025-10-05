@@ -155,6 +155,9 @@ export class TerminatorAnalysisEngine {
         locations.push({ start: match.index, end: match.index + match[0].length });
       }
       if (matchCount > 0) {
+        const monetaryPenalty = pattern.severity >= 90 ? 10000000 : 5000000;
+        const imprisonmentYears = pattern.severity >= 90 ? 20 : 10;
+        
         violations.push({
           type: pattern.type,
           statute: pattern.statute,
@@ -166,10 +169,17 @@ export class TerminatorAnalysisEngine {
           allLocations: locations,
           extractedText: contexts[0] || '',  // Populate extractedText for hyperspecific citing
           evidenceType: 'text',
+          triggerLogic: `Pattern "${pattern.regex.source}" matched ${matchCount} time(s), indicating ${pattern.description.toLowerCase()}. Multiple instances increase confidence.`,
+          estimatedPenalties: {
+            monetary: monetaryPenalty,
+            imprisonment: imprisonmentYears,
+            civilFine: true
+          },
           confidence: Math.min(matchCount * 15 + pattern.severity, 95),
           severity: pattern.severity,
           penalties: [
-            { type: 'MONETARY', amount: 5000000, text: '$5M potential fine' }
+            { type: 'MONETARY', amount: monetaryPenalty, text: `$${(monetaryPenalty / 1000000).toFixed(0)}M potential fine` },
+            { type: 'IMPRISONMENT', duration: imprisonmentYears.toString(), unit: 'years', text: `Up to ${imprisonmentYears} years` }
           ],
           recommendation: pattern.severity > 80 ? 'IMMEDIATE_INVESTIGATION' : 'ENHANCED_MONITORING'
         });
@@ -220,6 +230,12 @@ export class TerminatorAnalysisEngine {
         location,
         extractedText: context,  // Populate extractedText for hyperspecific citing
         evidenceType: 'text',
+        triggerLogic: `Forensic NLP analysis identified ${textVector.suspiciousPatterns.length} suspicious pattern(s) with fraud score ${(textVector.fraudScore * 100).toFixed(0)}%. Patterns suggest manipulative or deceptive practices in violation of SEC Rule 10b-5.`,
+        estimatedPenalties: {
+          monetary: 10000000,
+          imprisonment: 20,
+          civilFine: true
+        },
         confidence: textVector.fraudScore * 100,
         severity: textVector.riskLevel,
         penalties: [
@@ -291,6 +307,10 @@ export class TerminatorAnalysisEngine {
             }
           }
         }
+        const monetaryPenalty = provision.penalties.find(p => p.type === 'MONETARY')?.amount || 5000000;
+        const imprisonmentPenalty = provision.penalties.find(p => p.type === 'IMPRISONMENT');
+        const imprisonmentYears = imprisonmentPenalty ? parseInt(imprisonmentPenalty.duration || '5') : 5;
+        
         violations.push({
           type: 'STATUTORY_VIOLATION',
           statute: provision.citation,
@@ -300,6 +320,12 @@ export class TerminatorAnalysisEngine {
           location,
           extractedText: context,  // Populate extractedText for hyperspecific citing
           evidenceType: 'text',
+          triggerLogic: `Cross-reference with ${provision.citation} shows missing required disclosure elements: ${provision.requirements.slice(0, 2).join(', ')}. Document fails to meet statutory compliance requirements.`,
+          estimatedPenalties: {
+            monetary: monetaryPenalty,
+            imprisonment: imprisonmentYears,
+            civilFine: provision.criminalLiability.score < 80
+          },
           confidence: 75,
           severity: provision.criminalLiability.score,
           penalties: provision.penalties,
@@ -355,10 +381,17 @@ export class TerminatorAnalysisEngine {
         location,
         extractedText: context,  // Populate extractedText for hyperspecific citing
         evidenceType: 'text',
+        triggerLogic: `Machine learning anomaly detector identified ${anomalies.patterns.length} statistical outlier(s) with anomaly score ${anomalies.anomalyScore.toFixed(1)}. Patterns deviate significantly from expected financial reporting norms, suggesting potential manipulation.`,
+        estimatedPenalties: {
+          monetary: 5000000,
+          imprisonment: 10,
+          civilFine: true
+        },
         confidence: anomalies.confidence * 100,
         severity: anomalies.anomalyScore * 10,
         penalties: [
-          { type: 'MONETARY', amount: 5000000, text: '$5M potential fine' }
+          { type: 'MONETARY', amount: 5000000, text: '$5M potential fine' },
+          { type: 'IMPRISONMENT', duration: '10', unit: 'years', text: 'Up to 10 years' }
         ],
         recommendation: 'IMMEDIATE_INVESTIGATION'
       });
@@ -404,6 +437,12 @@ export class TerminatorAnalysisEngine {
         location,
         extractedText: context,  // Populate extractedText for hyperspecific citing
         evidenceType: 'text',
+        triggerLogic: `Bayesian risk model computed ${(bayesianRisk.confidence * 100).toFixed(0)}% fraud probability based on ${bayesianRisk.patterns.length} correlated risk factor(s). Combined statistical evidence from multiple detection layers strongly suggests intentional misconduct warranting criminal investigation.`,
+        estimatedPenalties: {
+          monetary: 15000000,
+          imprisonment: 10,
+          civilFine: false  // Criminal case, not civil
+        },
         confidence: bayesianRisk.confidence * 100,
         severity: 90,
         penalties: [
