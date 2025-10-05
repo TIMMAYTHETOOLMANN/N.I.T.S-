@@ -221,16 +221,46 @@ def financial_sentiment():
 
 @app.route('/ocr', methods=['POST'])
 def perform_ocr():
-    """Perform OCR on image data"""
-    if not ocr:
-        return jsonify({"error": "OCR service not available"}), 503
-    
+    """Perform OCR on image data or PDF file"""
     try:
         data = request.json
-        image_base64 = data.get('image', '')
         
+        # Check if this is PDF OCR request
+        pdf_path = data.get('pdf_path')
+        if pdf_path:
+            # Handle PDF OCR using pdf2image + pytesseract
+            try:
+                from pdf2image import convert_from_path
+                import pytesseract
+            except ImportError as e:
+                return jsonify({"error": f"Required OCR dependencies not installed: {e}"}), 503
+            
+            # Check if PDF file exists
+            import os
+            if not os.path.exists(pdf_path):
+                return jsonify({"error": f"PDF file not found: {pdf_path}"}), 404
+            
+            # Convert PDF to images and extract text
+            images = convert_from_path(pdf_path)
+            text_pages = []
+            for i, img in enumerate(images):
+                try:
+                    page_text = pytesseract.image_to_string(img)
+                    text_pages.append(page_text)
+                except Exception as e:
+                    logger.error(f"OCR failed for page {i+1}: {e}")
+                    text_pages.append("")
+            
+            full_text = "\n".join(text_pages)
+            return jsonify({"text": full_text})
+        
+        # Handle image OCR (existing functionality)
+        if not ocr:
+            return jsonify({"error": "OCR service not available"}), 503
+        
+        image_base64 = data.get('image', '')
         if not image_base64:
-            return jsonify({"error": "No image provided"}), 400
+            return jsonify({"error": "No image or pdf_path provided"}), 400
         
         # Decode base64 image
         try:

@@ -232,6 +232,30 @@ export class MLServiceClient {
   }
 
   /**
+   * Run OCR on PDF file
+   */
+  async runOCR(pdfPath: string): Promise<{ text: string }> {
+    if (!pdfPath) {
+      throw new Error('No PDF path provided for OCR');
+    }
+
+    try {
+      const response = await axios.post(
+        `${this.baseUrl}/ocr`,
+        { pdf_path: pdfPath },
+        { 
+          timeout: this.timeout,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('OCR processing failed:', error);
+      throw new Error(`OCR processing failed: ${error}`);
+    }
+  }
+
+  /**
    * Check if ML service is available and ready
    */
   async isServiceReady(): Promise<boolean> {

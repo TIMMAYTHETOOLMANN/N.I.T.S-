@@ -5,7 +5,7 @@ import { IntegratedNITSCore } from './complete_integration_patch';
 
 const upload = multer({ dest: 'uploads/' });
 const app = express();
-const port = process.env.GUI_PORT ? parseInt(process.env.GUI_PORT) : 4000;
+const port = process.env.GUI_PORT ? parseInt(process.env.GUI_PORT) : 4001;
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '..', 'gui_views'));

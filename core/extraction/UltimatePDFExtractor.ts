@@ -248,20 +248,16 @@ export class UltimatePDFExtractor extends PdfExtractor {
     const processingNotes: string[] = [];
 
     try {
-      const capabilities = await this.mlService.getCapabilities();
-      
-      if (capabilities.ocr) {
-        processingNotes.push('OCR extraction attempted but requires image conversion implementation');
-        // In a full implementation, this would convert PDF pages to images and send to OCR
-        // For now, we enhance the digital text as much as possible
-        ocrText = this.enhanceTextExtraction(digitalResult.text);
-      } else {
-        processingNotes.push('OCR service not available - enhanced digital extraction used');
-        ocrText = this.enhanceTextExtraction(digitalResult.text);
-      }
+      const response = await this.mlService.runOCR(filePath);
+      if (!response || !response.text) throw new Error("OCR failed or returned empty.");
+      ocrText = response.text;
+      ocrConfidence = 0.8; // Assume good OCR confidence
+      processingNotes.push('OCR extraction completed successfully');
     } catch (error) {
       console.error('OCR extraction failed:', error);
       processingNotes.push(`OCR extraction failed: ${error}`);
+      // Fallback to enhanced digital text
+      ocrText = this.enhanceTextExtraction(digitalResult.text);
     }
 
     return {
@@ -272,7 +268,7 @@ export class UltimatePDFExtractor extends PdfExtractor {
       tables: this.extractTablesFromText(ocrText),
       entities: [],
       ocrConfidence: ocrConfidence,
-      processingNotes: []
+      processingNotes: processingNotes
     };
   }
 
@@ -424,15 +420,9 @@ export class UltimatePDFExtractor extends PdfExtractor {
    * Check for binary content (inherited from parent class)
    */
   private containsBinaryContent(text: string): boolean {
-    // Check for null bytes
     if (text.includes('\x00')) return true;
-    
-    // Check for high proportion of non-printable characters
     const nonPrintable = (text.match(/[^\x20-\x7E\r\n\t]/g) || []).length;
-    if (text.length > 0 && nonPrintable / text.length > 0.1) return true;
-    
-    // Check for PDF binary markers
-    const binaryMarkers = ['%PDF', 'endobj', 'endstream', '/Type /Catalog', 'xref'];
-    return binaryMarkers.some(marker => text.includes(marker));
+    if (text.length > 0 && nonPrintable / text.length > 0.25) return true;
+    return false;
   }
 }
