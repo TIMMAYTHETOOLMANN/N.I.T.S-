@@ -24,9 +24,9 @@ import { ProsecutionPackage } from '../core/evidence/ProsecutionPackage';
 import { Violation } from '../core/analysis/Violation';
 
 // Enhanced Modules
-import { UltimatePDFExtractor, AdvancedPDFContent } from '../core/extraction/UltimatePDFExtractor';
-import { SemanticContradictionDetector, SemanticContradiction } from '../core/semantic/SemanticContradictionDetector';
-import { AdvancedFinancialForensics, ForensicResults, FinancialData } from '../core/financial/AdvancedFinancialForensics';
+import { UltimatePDFExtractor, UltimateExtractedContent } from '../core/extraction/UltimatePDFExtractor';
+import { SemanticContradictionDetector, SemanticContradiction, ContradictionAnalysisResult } from '../core/semantic/SemanticContradictionDetector';
+import { AdvancedFinancialForensics, ForensicAnalysisResult, FinancialData } from '../core/financial/AdvancedFinancialForensics';
 import { ContradictionKnowledgeGraph, GraphDocument } from '../core/graph/ContradictionKnowledgeGraph';
 import { MLServiceClient } from '../python_bridge/MLServiceClient';
 
@@ -53,9 +53,9 @@ export interface UltimateAnalysisResult {
   recommendation: string;
   
   // Enhanced analysis
-  advancedPdfContent?: AdvancedPDFContent;
+  advancedPdfContent?: UltimateExtractedContent;
   semanticContradictions?: SemanticContradiction[];
-  financialForensics?: ForensicResults;
+  financialForensics?: ForensicAnalysisResult;
   knowledgeGraphInsights?: any;
   
   // Metadata
@@ -230,7 +230,7 @@ export class UltimateNITSCore extends IntegratedNITSCore {
     try {
       // Step 1: Advanced PDF Extraction
       console.log('📄 Step 1/5: Advanced PDF Extraction');
-      let advancedContent: AdvancedPDFContent | undefined;
+      let advancedContent: UltimateExtractedContent | undefined;
       let documentText: string;
 
       if (filePath.toLowerCase().endsWith('.pdf')) {
@@ -253,11 +253,11 @@ export class UltimateNITSCore extends IntegratedNITSCore {
         console.log('💰 Step 3/5: Financial Forensics Analysis');
         const financialData = this.extractFinancialDataFromText(documentText);
         if (financialData) {
-          result.financialForensics = await this.financialForensics.comprehensiveAnalysis(financialData);
+          result.financialForensics = await this.financialForensics.performComprehensiveAnalysis(financialData);
           
           // Adjust threat level based on financial forensics
-          if (result.financialForensics.risk_level > 70) {
-            result.overallThreatLevel = Math.max(result.overallThreatLevel, result.financialForensics.risk_level);
+          if (result.financialForensics.overallRiskLevel > 70) {
+            result.overallThreatLevel = Math.max(result.overallThreatLevel, result.financialForensics.overallRiskLevel);
           }
         }
       }
@@ -372,19 +372,19 @@ export class UltimateNITSCore extends IntegratedNITSCore {
       console.log(`   Internal Documents: ${internalDocs.length}`);
       
       try {
-        const contradictions = await this.semanticDetector.detectContradictions(
+        const contradictionResult = await this.semanticDetector.detectContradictions(
           publicDocs,
           internalDocs
         );
         
-        totalContradictions = contradictions.length;
+        totalContradictions = contradictionResult.contradictions.length;
         console.log(`   ✅ Found ${totalContradictions} semantic contradictions`);
 
         // Add contradictions to results
-        for (const contradiction of contradictions) {
+        for (const contradiction of contradictionResult.contradictions) {
           // Find corresponding results and add contradictions
-          const secResult = results.find(r => documentPaths[results.indexOf(r)] === contradiction.sec_document.id);
-          const internalResult = results.find(r => documentPaths[results.indexOf(r)] === contradiction.internal_document.id);
+          const secResult = results.find(r => documentPaths[results.indexOf(r)] === contradiction.secDocument.id);
+          const internalResult = results.find(r => documentPaths[results.indexOf(r)] === contradiction.internalDocument.id);
           
           if (secResult) {
             if (!secResult.semanticContradictions) secResult.semanticContradictions = [];
@@ -499,17 +499,17 @@ export class UltimateNITSCore extends IntegratedNITSCore {
         report += `**Violations:** ${result.violations.length}\n`;
         report += `**Recommendation:** ${result.recommendation}\n\n`;
         
-        if (result.financialForensics && result.financialForensics.risk_level > 70) {
+        if (result.financialForensics && result.financialForensics.overallRiskLevel > 70) {
           report += `**Financial Forensics Alert:**\n`;
-          report += `- Risk Level: ${result.financialForensics.risk_level}/100\n`;
-          report += `- Beneish M-Score: ${result.financialForensics.beneish_m_score.toFixed(3)}\n`;
-          report += `- Red Flags: ${result.financialForensics.red_flags.length}\n\n`;
+          report += `- Risk Level: ${result.financialForensics.overallRiskLevel}/100\n`;
+          report += `- Beneish M-Score: ${result.financialForensics.beneishMScore.score.toFixed(3)}\n`;
+          report += `- Red Flags: ${result.financialForensics.redFlags.length}\n\n`;
         }
 
         if (result.semanticContradictions && result.semanticContradictions.length > 0) {
           report += `**Semantic Contradictions:** ${result.semanticContradictions.length}\n`;
           const topContradiction = result.semanticContradictions[0];
-          report += `- Top Contradiction Confidence: ${(topContradiction.contradiction_confidence * 100).toFixed(1)}%\n`;
+          report += `- Top Contradiction Confidence: ${(topContradiction.contradictionConfidence * 100).toFixed(1)}%\n`;
           report += `- Severity: ${topContradiction.severity}/100\n\n`;
         }
 
@@ -537,8 +537,9 @@ export class UltimateNITSCore extends IntegratedNITSCore {
       for (let i = 0; i < topContradictions.length; i++) {
         const contradiction = topContradictions[i];
         report += `### ${i + 1}. High-Severity Contradiction (${contradiction.severity}/100)\n\n`;
-        report += `**Confidence:** ${(contradiction.contradiction_confidence * 100).toFixed(1)}%\n\n`;
-        report += `**Evidence:** ${contradiction.evidence.substring(0, 300)}...\n\n`;
+        report += `**Confidence:** ${(contradiction.contradictionConfidence * 100).toFixed(1)}%\n\n`;
+        report += `**SEC Snippet:** ${contradiction.evidence.secSnippet.substring(0, 150)}...\n\n`;
+        report += `**Internal Snippet:** ${contradiction.evidence.internalSnippet.substring(0, 150)}...\n\n`;
         report += '---\n\n';
       }
     }
@@ -594,50 +595,58 @@ export class UltimateNITSCore extends IntegratedNITSCore {
 
     return {
       current: {
+        revenue: currentRevenue,
         sales: currentRevenue,
-        net_income: currentProfit,
+        netIncome: currentProfit,
         receivables: currentRevenue * 0.15,
         cogs: currentRevenue * 0.7,
-        current_assets: currentRevenue * 1.2,
+        grossProfit: currentRevenue * 0.3,
+        currentAssets: currentRevenue * 1.2,
         ppe: currentRevenue * 0.8,
-        total_assets: currentRevenue * 2.5,
+        totalAssets: currentRevenue * 2.5,
         depreciation: currentRevenue * 0.05,
         sga: currentRevenue * 0.15,
-        lt_debt: currentRevenue * 0.6,
-        current_liab: currentRevenue * 0.3,
-        operating_cf: currentProfit * 1.2,
-        retained_earnings: currentRevenue * 0.4,
+        operatingIncome: currentProfit * 1.2,
+        ltDebt: currentRevenue * 0.6,
+        currentLiabilities: currentRevenue * 0.3,
+        operatingCashFlow: currentProfit * 1.2,
+        retainedEarnings: currentRevenue * 0.4,
         ebit: currentProfit * 1.5,
-        market_cap: currentRevenue * 5,
-        total_liabilities: currentRevenue * 1.2,
+        marketCap: currentRevenue * 5,
+        totalLiabilities: currentRevenue * 1.2,
         roa: currentProfit / (currentRevenue * 2.5),
-        current_ratio: 2.0,
-        shares_outstanding: 1000000,
-        gross_margin: 0.3,
-        asset_turnover: 1.2
+        currentRatio: 2.0,
+        sharesOutstanding: 1000000,
+        grossMargin: 0.3,
+        assetTurnover: 1.2,
+        reportDate: new Date()
       },
       previous: {
+        revenue: currentRevenue * 0.9,
         sales: currentRevenue * 0.9,
-        net_income: currentProfit * 0.9,
+        netIncome: currentProfit * 0.9,
         receivables: currentRevenue * 0.14,
         cogs: currentRevenue * 0.68,
-        current_assets: currentRevenue * 1.1,
+        grossProfit: currentRevenue * 0.27,
+        currentAssets: currentRevenue * 1.1,
         ppe: currentRevenue * 0.75,
-        total_assets: currentRevenue * 2.3,
+        totalAssets: currentRevenue * 2.3,
         depreciation: currentRevenue * 0.045,
         sga: currentRevenue * 0.14,
-        lt_debt: currentRevenue * 0.55,
-        current_liab: currentRevenue * 0.28,
-        operating_cf: currentProfit * 1.1,
-        retained_earnings: currentRevenue * 0.35,
+        operatingIncome: currentProfit * 1.1,
+        ltDebt: currentRevenue * 0.55,
+        currentLiabilities: currentRevenue * 0.28,
+        operatingCashFlow: currentProfit * 1.1,
+        retainedEarnings: currentRevenue * 0.35,
         ebit: currentProfit * 1.4,
-        market_cap: currentRevenue * 4.5,
-        total_liabilities: currentRevenue * 1.1,
+        marketCap: currentRevenue * 4.5,
+        totalLiabilities: currentRevenue * 1.1,
         roa: (currentProfit * 0.9) / (currentRevenue * 2.3),
-        current_ratio: 1.9,
-        shares_outstanding: 1000000,
-        gross_margin: 0.32,
-        asset_turnover: 1.1
+        currentRatio: 1.9,
+        sharesOutstanding: 1000000,
+        grossMargin: 0.32,
+        assetTurnover: 1.1,
+        reportDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)
       }
     };
   }
@@ -675,7 +684,7 @@ export class UltimateNITSCore extends IntegratedNITSCore {
     let confidence = 0.7; // Base confidence
 
     // Increase confidence based on available data
-    if (result.advancedPdfContent && result.advancedPdfContent.quality_score > 0.8) {
+    if (result.advancedPdfContent && result.advancedPdfContent.qualityScore > 0.8) {
       confidence += 0.1;
     }
 
