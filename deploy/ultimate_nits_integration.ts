@@ -785,8 +785,8 @@ async function main(): Promise<void> {
   }
 }
 
-// Export for use in other modules
-export { UltimateNITSCore, main as runUltimateAnalysis };
+// Export main function for use in other modules
+export { main as runUltimateAnalysis };
 
 // Run if executed directly
 if (require.main === module) {

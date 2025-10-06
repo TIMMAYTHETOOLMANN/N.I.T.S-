@@ -13,10 +13,19 @@ dotenv.config();
 
 /**
  * Initialize OpenAI client with API key from environment
+ * If no API key is provided, AI analysis will be disabled
  */
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+let openai: OpenAI | null = null;
+
+try {
+  if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'your_openai_api_key_here') {
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+  }
+} catch (error) {
+  console.warn('⚠️  OpenAI API key not configured. AI analysis will be disabled.');
+}
 
 /**
  * Analyze document content using OpenAI GPT-4 for legal violations
@@ -25,6 +34,11 @@ const openai = new OpenAI({
  * @returns AI-generated analysis report
  */
 export async function analyzeWithAI(prompt: string): Promise<string> {
+  // Check if OpenAI client is initialized
+  if (!openai) {
+    return 'AI Analysis Unavailable: OpenAI API key not configured. Please set OPENAI_API_KEY in .env file.';
+  }
+
   try {
     const response = await openai.chat.completions.create({
       model: 'gpt-4',
