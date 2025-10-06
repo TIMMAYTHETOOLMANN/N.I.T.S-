@@ -20,3 +20,6 @@ __pycache__/
 *.pyc
 *.pyo
 master_dossier.json
+.venv/
+venv/
+*.egg-info/

@@ -1,0 +1,15 @@
+# ML Service Requirements
+# Core dependencies for PDF OCR and ML service
+flask>=2.3.0
+flask-cors>=4.0.0
+pdf2image>=1.16.0
+pytesseract>=0.3.10
+requests>=2.31.0
+
+# Additional ML dependencies
+sentence-transformers>=2.2.0
+transformers>=4.35.0
+torch>=2.1.0
+numpy>=1.24.0
+opencv-python>=4.8.0
+Pillow>=10.0.0
