@@ -1,0 +1,43 @@
+[
+  {
+    "category": "Financial Fraud",
+    "regulation": "SEC Rule 10b-5",
+    "severity": 95,
+    "keywords": [
+      "fraud",
+      "misleading",
+      "material misstatement",
+      "deceptive"
+    ]
+  },
+  {
+    "category": "Safety Violations",
+    "regulation": "OSHA 29 CFR 1910",
+    "severity": 85,
+    "keywords": [
+      "safety violation",
+      "unsafe conditions",
+      "hazardous"
+    ]
+  },
+  {
+    "category": "Environmental Compliance",
+    "regulation": "EPA 40 CFR",
+    "severity": 80,
+    "keywords": [
+      "pollution",
+      "toxic discharge",
+      "environmental damage"
+    ]
+  },
+  {
+    "category": "Insider Trading",
+    "regulation": "SEC Rule 10b5-1",
+    "severity": 90,
+    "keywords": [
+      "insider trading",
+      "material non-public information",
+      "tipping"
+    ]
+  }
+]

@@ -513,7 +513,7 @@ def create_sample_dossier(output_path: str = "master_dossier.json"):
             "category": "Financial Fraud",
             "regulation": "SEC Rule 10b-5",
             "severity": 95,
-            "keywords": ["fraud", "misleading", "material misstatement", "deceptive"]
+            "keywords": ["fraud", "fraudulent", "misleading", "material misstatement", "misstatements", "deceptive"]
         },
         {
             "category": "Safety Violations",
