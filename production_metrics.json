@@ -1,9 +1,9 @@
 {
-  "timestamp": "2025-10-06T13:42:27.385978",
-  "documents_processed": 10,
-  "processing_time_seconds": 5.0,
-  "violations_found": 30,
+  "timestamp": "2025-10-06T13:48:23.512855",
+  "documents_processed": 2,
+  "processing_time_seconds": 0.009317159652709961,
+  "violations_found": 4,
   "errors_count": 0,
   "success_rate": 100.0,
-  "avg_processing_speed": 120.0
+  "avg_processing_speed": 12879.461603418715
 }
