@@ -13,7 +13,15 @@ This is the minimal, lethal core repository for NITS - a precision-engineered le
 
 ## Features
 
-✅ **Deployment & Fix Guide** 🔧 NEW
+✅ **ML Service with OCR** 🧠 NEW
+- Python-based ML service for advanced document processing
+- OCR capabilities for scanned PDFs (Tesseract + Poppler)
+- Semantic analysis and contradiction detection
+- Financial sentiment analysis with transformer models
+- One-command automated setup script
+- See [QUICK_SETUP_ML_SERVICE.md](QUICK_SETUP_ML_SERVICE.md) or [ML_SERVICE_SETUP_GUIDE.md](ML_SERVICE_SETUP_GUIDE.md)
+
+✅ **Deployment & Fix Guide** 🔧
 - Comprehensive deployment guide with 7 critical fixes
 - Python implementation with enhanced error handling
 - System diagnostics and validation tools
@@ -83,6 +91,11 @@ ingestion/
 ├── excel/           # Spreadsheet analysis
 ├── html/            # Web content extraction
 └── glamor/          # Public communications
+
+ml_service/          # 🧠 NEW: Python ML Service
+├── main.py          # Flask API server
+├── requirements.txt # ML dependencies
+└── setup_ml_service.sh  # Automated setup
 
 proof/
 └── exporters/       # TCR, DOJ referral generation
