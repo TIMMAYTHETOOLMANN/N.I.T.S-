@@ -6,6 +6,7 @@ Provides transformer models, OCR, and advanced NLP via HTTP API
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from werkzeug.utils import secure_filename
 import numpy as np
 import torch
 import logging
@@ -14,6 +15,10 @@ import cv2
 from io import BytesIO
 from PIL import Image
 import json
+import hashlib
+import os
+import sys
+import tempfile
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -365,6 +370,192 @@ def extract_entities():
     except Exception as e:
         logger.error(f"Entity extraction error: {e}")
         return jsonify({"error": str(e)}), 500
+
+# File type signatures for validation
+FILE_SIGNATURES = {
+    'pdf': b'%PDF',
+    'png': b'\x89PNG',
+    'jpg': b'\xff\xd8\xff',
+    'xlsx': b'PK\x03\x04',
+    'xls': b'\xD0\xCF\x11\xE0'
+}
+
+def validate_file_signature(file_bytes: bytes, expected_type: str) -> bool:
+    """Validate file content matches expected type"""
+    sig = FILE_SIGNATURES.get(expected_type)
+    if sig:
+        return file_bytes.startswith(sig)
+    return True
+
+@app.route('/api/process', methods=['POST'])
+def process_file():
+    """
+    Process multipart file upload with integrity checking
+    
+    CRITICAL: Client must send multipart/form-data with boundary parameter
+    Example: Content-Type: multipart/form-data; boundary=----WebKit...
+    """
+    
+    # Set max content length (10MB)
+    app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
+    
+    # Validate file present in multipart request
+    if 'file' not in request.files:
+        return jsonify({
+            'error': 'No file in request',
+            'hint': 'Ensure multipart/form-data with proper boundary'
+        }), 400
+    
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    
+    # Get metadata from form
+    original_hash = request.form.get('original_hash')
+    
+    logger.info(f'📥 Receiving file: {file.filename}')
+    logger.info(f'   Content-Type: {file.content_type}')
+    logger.info(f'   Expected hash: {original_hash}')
+    
+    # Read file data in BINARY mode (critical!)
+    file_bytes = file.read()
+    file_size = len(file_bytes)
+    
+    # Calculate hash to verify transfer integrity
+    received_hash = hashlib.md5(file_bytes).hexdigest()
+    
+    logger.info(f'   Received size: {file_size} bytes')
+    logger.info(f'   Received hash: {received_hash}')
+    logger.info(f'   First 16 bytes: {file_bytes[:16].hex()}')
+    
+    # Verify integrity
+    if original_hash and original_hash != received_hash:
+        return jsonify({
+            'error': 'File corruption detected during transfer',
+            'expected_hash': original_hash,
+            'received_hash': received_hash,
+            'hint': 'Binary data may have been corrupted by encoding'
+        }), 400
+    
+    # Validate file signature
+    file_ext = os.path.splitext(file.filename)[1].lower()[1:]  # Remove dot
+    
+    if not validate_file_signature(file_bytes, file_ext):
+        return jsonify({
+            'error': f'File content does not match {file_ext} format',
+            'signature': file_bytes[:4].hex()
+        }), 400
+    
+    # Process based on file type
+    try:
+        if file_ext == 'pdf':
+            result = process_pdf_document(file_bytes)
+        elif file_ext in ['xls', 'xlsx']:
+            result = process_excel_document(file_bytes, file_ext, file.filename)
+        elif file_ext == 'xml':
+            result = process_sec_xml_document(file_bytes)
+        else:
+            return jsonify({
+                'error': f'Unsupported file type: {file_ext}'
+            }), 400
+        
+        return jsonify({
+            'success': True,
+            'filename': file.filename,
+            'size': file_size,
+            'hash': received_hash,
+            'result': result
+        }), 200
+        
+    except Exception as e:
+        logger.error(f'❌ Processing error: {str(e)}')
+        import traceback
+        traceback.print_exc()
+        
+        return jsonify({
+            'error': 'Processing failed',
+            'message': str(e),
+            'type': type(e).__name__
+        }), 500
+
+def process_pdf_document(pdf_bytes: bytes) -> dict:
+    """Process PDF document"""
+    try:
+        import fitz  # PyMuPDF
+    except ImportError:
+        raise ImportError("PyMuPDF not installed. Install with: pip install PyMuPDF==1.23.8")
+    
+    # Save to temp file
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp:
+        tmp.write(pdf_bytes)
+        tmp_path = tmp.name
+    
+    try:
+        doc = fitz.open(tmp_path)
+        text = ""
+        for page in doc:
+            text += page.get_text()
+        doc.close()
+        
+        return {
+            'type': 'pdf',
+            'text_length': len(text),
+            'text_preview': text[:500]
+        }
+    finally:
+        os.unlink(tmp_path)
+
+def process_excel_document(excel_bytes: bytes, file_type: str, filename: str) -> dict:
+    """Process Excel document"""
+    # Add parent directory to path for parser imports
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+    
+    try:
+        from src.parsers.excel_processor import ExcelProcessor
+    except ImportError:
+        raise ImportError("Excel processor not found. Check src/parsers/excel_processor.py")
+    
+    # Save to temp file with correct extension
+    with tempfile.NamedTemporaryFile(delete=False, suffix=f'.{file_type}') as tmp:
+        tmp.write(excel_bytes)
+        tmp_path = tmp.name
+    
+    try:
+        df = ExcelProcessor.read_excel_auto(tmp_path)
+        return {
+            'type': 'excel',
+            'rows': len(df),
+            'columns': len(df.columns),
+            'column_names': df.columns.tolist(),
+            'preview': df.head(5).to_dict()
+        }
+    finally:
+        os.unlink(tmp_path)
+
+def process_sec_xml_document(xml_bytes: bytes) -> dict:
+    """Process SEC Form 4 XML document"""
+    # Add parent directory to path for parser imports
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+    
+    try:
+        from src.parsers.sec_form4_parser import SECForm4Parser
+    except ImportError:
+        raise ImportError("SEC parser not found. Check src/parsers/sec_form4_parser.py")
+    
+    parser = SECForm4Parser()
+    result = parser.parse_form4_xml(xml_bytes)
+    
+    return {
+        'type': 'sec_form4_xml',
+        'issuer': result['issuer']['name'],
+        'transaction_count': result['transaction_count'],
+        'full_data': result
+    }
+
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    return jsonify({'error': 'File is too large (max 10MB)'}), 413
 
 if __name__ == '__main__':
     # Initialize models at startup
