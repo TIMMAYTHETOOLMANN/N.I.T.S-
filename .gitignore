@@ -25,3 +25,16 @@ temp_dossier.json
 .venv/
 venv/
 *.egg-info/
+
+# Backup directories (from DEPLOYMENT_FIX_GUIDE)
+backup_*/
+backup/
+
+# Temporary files
+/tmp/
+*.tmp
+*.temp
+
+# Diagnostic output
+diagnostic_output.txt
+nits.log
