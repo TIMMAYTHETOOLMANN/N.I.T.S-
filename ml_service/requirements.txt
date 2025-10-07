@@ -21,7 +21,7 @@ lxml==4.9.3
 beautifulsoup4==4.12.2
 
 # Flask Service Enhancement
-werkzeug==3.0.1
+werkzeug==3.0.6
 
 # Additional ML dependencies
 sentence-transformers>=2.2.0
