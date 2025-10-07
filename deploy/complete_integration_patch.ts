@@ -39,6 +39,12 @@ import { BayesianRiskAnalyzer } from '../core/anomaly/BayesianRiskAnalyzer';
 // AI Enhancement Module
 import { analyzeWithAI } from '../core/analysis/AIInvestigator';
 
+// JUNI: Enhanced Imports
+import { SecGovHarvester } from '../core/govinfo/SecGovHarvester';
+import { FooterMicrotextScanner } from '../core/extraction/FooterMicrotextScanner';
+import { RobustDocumentParser } from '../core/ingestion/RobustDocumentParser';
+import { KeywordEngine } from '../core/analysis/KeywordEngine';
+
 /**
  * Configuration with API Key Integration
  */
@@ -133,6 +139,15 @@ async function initializeSystem(): Promise<{
   console.log('🔗 Phase 6: Contradiction & Correlation Analysis');
   const correlationAnalyzer = new DocumentCorrelationAnalyzer();
   console.log('   ✅ Correlation Analyzer: Ready');
+  console.log('');
+  // INJECTION_POINT: juni_integration
+  
+  // JUNI Phase 7: Enhanced Components
+  console.log('🔧 JUNI Phase 7: Enhanced Components');
+  const secHarvester = new SecGovHarvester();
+  const keywordEngine = new KeywordEngine();
+  const robustParser = new RobustDocumentParser();
+  console.log('   ✅ JUNI Enhanced Components: Ready');
   console.log('');
   
   console.log('✅ ALL MODULES INITIALIZED SUCCESSFULLY');
