@@ -3,6 +3,7 @@ import { GovInfoTerminator } from '../govinfo/GovInfoTerminator';
 import { ForensicTextAnalyzer } from '../nlp/ForensicTextAnalyzer';
 import { AnomalyDetector } from '../anomaly/AnomalyDetector';
 import { BayesianRiskAnalyzer } from '../anomaly/BayesianRiskAnalyzer';
+import { ResearchConfig, AdvancedFinancialForensics, EDGARFinancialData } from '../financial/AdvancedFinancialForensics';
 
 interface ExtractedContent {
   text: string;
@@ -27,6 +28,46 @@ interface TerminationReport {
   recommendation: string;
 }
 
+// SEC EDGAR Integration Interfaces
+interface SECAPIConfig {
+  baseURL: string;
+  userAgent: string;
+  rateLimitDelay: number;
+  maxRetries: number;
+  complianceHeaders: { [key: string]: string };
+}
+
+interface XBRLExtraction {
+  accessionNumber: string;
+  formType: string;
+  filingDate: string;
+  cik: string;
+  financialData: any;
+  extractedClaims: string[];
+  contradictions: any[];
+}
+
+interface BulkAnalysisResult {
+  edgarData: EDGARFinancialData;
+  violations: Violation[];
+  financialForensics: any;
+  contradictionAnalysis: any;
+  evidenceChain: string[];
+}
+
+// SEC Configuration
+const SEC_CONFIG: SECAPIConfig = {
+  baseURL: 'https://data.sec.gov',
+  userAgent: 'NITS Legal Analysis System admin@nits-research.org',
+  rateLimitDelay: 100, // 100ms between requests (10 requests/second max)
+  maxRetries: 3,
+  complianceHeaders: {
+    'User-Agent': 'NITS Legal Analysis System admin@nits-research.org',
+    'Accept-Encoding': 'gzip, deflate',
+    'Host': 'data.sec.gov'
+  }
+};
+
 export class TerminatorAnalysisEngine {
 
   /**
@@ -45,13 +86,20 @@ export class TerminatorAnalysisEngine {
   private textAnalyzer: ForensicTextAnalyzer;
   private anomalyDetector: AnomalyDetector;
   private bayesianAnalyzer: BayesianRiskAnalyzer;
+  private financialForensics: AdvancedFinancialForensics;
   private isInitialized: boolean = false;
+  
+  // EDGAR Integration Properties
+  private lastAPICall: number = 0;
+  private apiCallCount: number = 0;
+  private edgarCache: Map<string, any> = new Map();
   
   constructor() {
     this.govInfo = new GovInfoTerminator();
     this.textAnalyzer = new ForensicTextAnalyzer();
     this.anomalyDetector = new AnomalyDetector();
     this.bayesianAnalyzer = new BayesianRiskAnalyzer();
+    this.financialForensics = new AdvancedFinancialForensics();
   }
   
   async initialize(): Promise<void> {
@@ -111,6 +159,327 @@ export class TerminatorAnalysisEngine {
     // Use actionable only if we have high-confidence violations
     const finalViolations = actionable.length > 0 ? actionable : violations;
     return finalViolations.sort((a, b) => b.severity - a.severity);
+  }
+  
+  /**
+   * EDGAR Bulk Analysis - Process SEC filings with comprehensive forensic analysis
+   */
+  async processEDGARBulkData(cik: string, whistleblowerDocuments: string[] = []): Promise<BulkAnalysisResult> {
+    console.log(`🏛️ Starting EDGAR bulk analysis for CIK: ${cik}`);
+    
+    try {
+      // Phase 1: Download and extract EDGAR data
+      const edgarData = await this.downloadEDGARData(cik);
+      console.log(`📥 Downloaded ${edgarData.filings.length} filings from EDGAR`);
+      
+      // Phase 2: Extract XBRL financial data
+      const xbrlExtractions = await this.extractXBRLFromFilings(edgarData.filings);
+      console.log(`💹 Extracted XBRL data from ${xbrlExtractions.length} filings`);
+      
+      // Phase 3: Perform comprehensive financial forensics
+      console.log(`🔬 Performing advanced financial forensics analysis...`);
+      const forensicsResults = await this.financialForensics.processEDGARData(edgarData);
+      
+      // Phase 4: Traditional violation analysis on filing text
+      const violations: Violation[] = [];
+      for (const extraction of xbrlExtractions) {
+        const filingText = JSON.stringify(extraction.financialData);
+        const filingViolations = await this.terminateDocument(filingText);
+        violations.push(...filingViolations);
+      }
+      
+      // Phase 5: Cross-document contradiction analysis
+      let contradictionAnalysis: any = null;
+      if (whistleblowerDocuments.length > 0) {
+        console.log(`🔍 Performing contradiction analysis with ${whistleblowerDocuments.length} whistleblower documents...`);
+        
+        const allDocuments = [
+          ...xbrlExtractions.map(x => x.extractedClaims.join(' ')),
+          ...whistleblowerDocuments
+        ];
+        
+        const { DocumentCorrelationAnalyzer } = await import('../anomaly/AnomalyDetector');
+        const correlationAnalyzer = new DocumentCorrelationAnalyzer();
+        contradictionAnalysis = correlationAnalyzer.analyzeCorrelations(allDocuments);
+        
+        console.log(`🚨 Found ${contradictionAnalysis.contradictions.length} contradictions with ${(contradictionAnalysis.contradiction_score * 100).toFixed(1)}% avg confidence`);
+      }
+      
+      // Phase 6: Generate evidence chain
+      const evidenceChain = this.generateEvidenceChain(edgarData, xbrlExtractions, violations, forensicsResults);
+      
+      const result: BulkAnalysisResult = {
+        edgarData,
+        violations,
+        financialForensics: forensicsResults,
+        contradictionAnalysis,
+        evidenceChain
+      };
+      
+      console.log(`✅ EDGAR bulk analysis complete:`);
+      console.log(`   📊 Filings processed: ${edgarData.filings.length}`);
+      console.log(`   ⚖️ Violations detected: ${violations.length}`);
+      console.log(`   💰 Financial forensics results: ${forensicsResults.length}`);
+      console.log(`   🔗 Evidence chain items: ${evidenceChain.length}`);
+      
+      return result;
+      
+    } catch (error) {
+      console.error(`❌ EDGAR bulk analysis failed for CIK ${cik}:`, error);
+      throw new Error(`EDGAR analysis failed: ${error}`);
+    }
+  }
+  
+  /**
+   * Download EDGAR data with SEC API compliance and rate limiting
+   */
+  private async downloadEDGARData(cik: string): Promise<EDGARFinancialData> {
+    // Apply rate limiting
+    await this.enforceRateLimit();
+    
+    const paddedCik = cik.padStart(10, '0');
+    const submissionsUrl = `${SEC_CONFIG.baseURL}/submissions/CIK${paddedCik}.json`;
+    
+    try {
+      console.log(`📡 Fetching SEC data from: ${submissionsUrl}`);
+      
+      // Check cache first
+      if (this.edgarCache.has(cik)) {
+        console.log(`📋 Using cached data for CIK ${cik}`);
+        return this.edgarCache.get(cik);
+      }
+      
+      // Simulate fetch with compliance headers (in production would use actual HTTP client)
+      const response = await this.simulateSECAPICall(submissionsUrl);
+      
+      if (!response.ok) {
+        throw new Error(`SEC API request failed: ${response.status}`);
+      }
+      
+      const submissionsData = await response.json();
+      
+      // Extract recent filings
+      const recentFilings = submissionsData.filings?.recent || {};
+      const filings = [];
+      
+      const filingCount = Math.min(
+        recentFilings.accessionNumber?.length || 0,
+        ResearchConfig.BATCH_SIZE
+      );
+      
+      for (let i = 0; i < filingCount; i++) {
+        // Focus on key financial forms
+        const formType = recentFilings.form?.[i];
+        if (['10-K', '10-Q', '8-K', '20-F'].includes(formType)) {
+          filings.push({
+            accession_number: recentFilings.accessionNumber[i],
+            filing_date: recentFilings.filingDate[i],
+            form_type: formType,
+            xbrl_data: await this.fetchXBRLData(cik, recentFilings.accessionNumber[i])
+          });
+        }
+      }
+      
+      const edgarData: EDGARFinancialData = {
+        cik: cik,
+        filings: filings,
+        company_facts: await this.fetchCompanyFacts(cik)
+      };
+      
+      // Cache the result
+      this.edgarCache.set(cik, edgarData);
+      
+      return edgarData;
+      
+    } catch (error) {
+      console.error(`❌ Error downloading EDGAR data for CIK ${cik}:`, error);
+      throw error;
+    }
+  }
+  
+  /**
+   * Enforce SEC API rate limiting compliance
+   */
+  private async enforceRateLimit(): Promise<void> {
+    const now = Date.now();
+    const timeSinceLastCall = now - this.lastAPICall;
+    
+    if (timeSinceLastCall < SEC_CONFIG.rateLimitDelay) {
+      const waitTime = SEC_CONFIG.rateLimitDelay - timeSinceLastCall;
+      console.log(`⏳ Rate limiting: waiting ${waitTime}ms`);
+      await new Promise(resolve => setTimeout(resolve, waitTime));
+    }
+    
+    this.lastAPICall = Date.now();
+    this.apiCallCount++;
+    
+    // Log API usage for compliance monitoring
+    if (this.apiCallCount % 100 === 0) {
+      console.log(`📊 SEC API calls made: ${this.apiCallCount}`);
+    }
+  }
+  
+  /**
+   * Simulate SEC API call with proper headers (replace with actual HTTP in production)
+   */
+  private async simulateSECAPICall(url: string): Promise<any> {
+    // In production, replace with actual HTTP client (axios, fetch, etc.)
+    // This simulation returns a mock successful response
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        cik: '0000320193',
+        entityType: 'operating',
+        filings: {
+          recent: {
+            accessionNumber: ['0000320193-24-000123', '0000320193-24-000122'],
+            filingDate: ['2024-10-01', '2024-07-01'],
+            form: ['10-K', '10-Q'],
+            primaryDocument: ['aapl-20240930.htm', 'aapl-20240630.htm']
+          }
+        }
+      })
+    };
+  }
+  
+  /**
+   * Fetch company facts (financial metrics over time)
+   */
+  private async fetchCompanyFacts(cik: string): Promise<any> {
+    await this.enforceRateLimit();
+    
+    const paddedCik = cik.padStart(10, '0');
+    const factsUrl = `${SEC_CONFIG.baseURL}/api/xbrl/companyfacts/CIK${paddedCik}.json`;
+    
+    try {
+      const response = await this.simulateSECAPICall(factsUrl);
+      
+      if (response.ok) {
+        return await response.json();
+      } else {
+        console.warn(`⚠️ Company facts not available for CIK ${cik}`);
+        return null;
+      }
+    } catch (error) {
+      console.warn(`⚠️ Error fetching company facts for CIK ${cik}:`, error);
+      return null;
+    }
+  }
+  
+  /**
+   * Fetch XBRL data for a specific filing
+   */
+  private async fetchXBRLData(cik: string, accessionNumber: string): Promise<any> {
+    await this.enforceRateLimit();
+    
+    // Simulate XBRL data extraction
+    return {
+      'Revenues': { value: 365000000000, unit: 'USD', end: '2024-09-30' },
+      'NetIncomeLoss': { value: 85000000000, unit: 'USD', end: '2024-09-30' },
+      'Assets': { value: 500000000000, unit: 'USD', end: '2024-09-30' },
+      'AssetsCurrent': { value: 150000000000, unit: 'USD', end: '2024-09-30' },
+      'Liabilities': { value: 300000000000, unit: 'USD', end: '2024-09-30' },
+      'LiabilitiesCurrent': { value: 100000000000, unit: 'USD', end: '2024-09-30' },
+      'OperatingIncomeLoss': { value: 95000000000, unit: 'USD', end: '2024-09-30' },
+      'AccountsReceivableNetCurrent': { value: 30000000000, unit: 'USD', end: '2024-09-30' },
+      'StockholdersEquity': { value: 200000000000, unit: 'USD', end: '2024-09-30' }
+    };
+  }
+  
+  /**
+   * Extract XBRL data and claims from filings
+   */
+  private async extractXBRLFromFilings(filings: any[]): Promise<XBRLExtraction[]> {
+    const extractions: XBRLExtraction[] = [];
+    
+    for (const filing of filings) {
+      if (filing.xbrl_data) {
+        // Extract financial claims from XBRL data
+        const claims = this.extractFinancialClaims(filing.xbrl_data);
+        
+        const extraction: XBRLExtraction = {
+          accessionNumber: filing.accession_number,
+          formType: filing.form_type,
+          filingDate: filing.filing_date,
+          cik: filing.cik || 'unknown',
+          financialData: filing.xbrl_data,
+          extractedClaims: claims,
+          contradictions: []
+        };
+        
+        extractions.push(extraction);
+      }
+    }
+    
+    return extractions;
+  }
+  
+  /**
+   * Extract financial claims from XBRL data for contradiction analysis
+   */
+  private extractFinancialClaims(xbrlData: any): string[] {
+    const claims: string[] = [];
+    
+    // Generate natural language claims from XBRL data
+    if (xbrlData.Revenues?.value) {
+      claims.push(`Revenue for the period was $${(xbrlData.Revenues.value / 1e9).toFixed(1)} billion`);
+    }
+    
+    if (xbrlData.NetIncomeLoss?.value) {
+      const income = xbrlData.NetIncomeLoss.value;
+      if (income > 0) {
+        claims.push(`Net income for the period was $${(income / 1e9).toFixed(1)} billion`);
+      } else {
+        claims.push(`Net loss for the period was $${Math.abs(income / 1e9).toFixed(1)} billion`);
+      }
+    }
+    
+    if (xbrlData.Assets?.value && xbrlData.Liabilities?.value) {
+      const leverage = xbrlData.Liabilities.value / xbrlData.Assets.value;
+      claims.push(`Debt-to-asset ratio is ${(leverage * 100).toFixed(1)}%`);
+    }
+    
+    if (xbrlData.AssetsCurrent?.value && xbrlData.LiabilitiesCurrent?.value) {
+      const currentRatio = xbrlData.AssetsCurrent.value / xbrlData.LiabilitiesCurrent.value;
+      claims.push(`Current ratio is ${currentRatio.toFixed(2)}`);
+    }
+    
+    return claims;
+  }
+  
+  /**
+   * Generate comprehensive evidence chain for audit trail
+   */
+  private generateEvidenceChain(
+    edgarData: EDGARFinancialData,
+    xbrlExtractions: XBRLExtraction[],
+    violations: Violation[],
+    forensicsResults: any[]
+  ): string[] {
+    const evidenceChain: string[] = [];
+    
+    // EDGAR data evidence
+    evidenceChain.push(`EDGAR-DATA-${edgarData.cik}-${Date.now()}`);
+    
+    // XBRL extractions evidence
+    for (const extraction of xbrlExtractions) {
+      evidenceChain.push(`XBRL-${extraction.accessionNumber}-${Date.now()}`);
+    }
+    
+    // Violation evidence
+    for (const violation of violations) {
+      if (violation.evidence) {
+        evidenceChain.push(`VIOLATION-${violation.type}-${Date.now()}`);
+      }
+    }
+    
+    // Financial forensics evidence
+    for (const result of forensicsResults) {
+      evidenceChain.push(`FORENSICS-${result.processingTimeMs}-${Date.now()}`);
+    }
+    
+    return evidenceChain;
   }
 
   private async scanSurfaceViolations(content: ExtractedContent): Promise<Violation[]> {

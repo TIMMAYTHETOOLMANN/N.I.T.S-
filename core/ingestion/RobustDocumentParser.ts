@@ -39,7 +39,7 @@ export class RobustDocumentParser {
     // Step 1: Digital PDF extraction
     if (filePath.toLowerCase().endsWith('.pdf')) {
       try {
-        const pdfResult = await this.pdfExtractor.extractFromBuffer(fileBuffer, filePath);
+        const pdfResult = await this.pdfExtractor.extractFromBuffer(fileBuffer.buffer);
 
         result.text = pdfResult.text;
         result.method = 'digital';
