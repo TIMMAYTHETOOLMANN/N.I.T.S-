@@ -35,6 +35,14 @@ This is the minimal, lethal core repository for NITS - a precision-engineered le
 - Integrates seamlessly with existing analysis pipeline
 - See [AI_INVESTIGATOR_README.md](AI_INVESTIGATOR_README.md)
 
+✅ **Local LLM Integration** 🧠 NEW
+- Offline document analysis with local GGUF models
+- Privacy-first: All data stays on your machine
+- No API costs or rate limits
+- Supports llama-node with GGUF models (Mistral, LLaMA-2, etc.)
+- One-command bootstrap script for setup
+- See [nits-vantablack/README.md](nits-vantablack/README.md)
+
 ✅ **Web-Based GUI** 🎯
 - Lightweight web interface for document analysis
 - Drag-and-drop file upload
@@ -138,7 +146,30 @@ cat output/ai_test_document.md
 
 See [AI_INVESTIGATOR_README.md](AI_INVESTIGATOR_README.md) for full documentation.
 
-### Option 3: GUI Mode (Easiest) 🎯
+### Option 3: Local LLM Mode (Offline) 🧠 NEW
+```bash
+# One-command setup
+chmod +x scripts/bootstrap_local.sh
+./scripts/bootstrap_local.sh
+
+# This will:
+# - Install llama-node dependencies
+# - Download Nous-Hermes-2-Mistral-7B model (~4GB)
+# - Configure the system
+# - Run a test analysis
+
+# Use in your code
+node -e "
+import('./nits-vantablack/ml_integration/local_model.js').then(async ({ analyzeWithLLM }) => {
+  const result = await analyzeWithLLM('Your document text here', 'summary');
+  console.log(result);
+});
+"
+```
+
+See [nits-vantablack/README.md](nits-vantablack/README.md) for full documentation.
+
+### Option 4: GUI Mode (Easiest) 🎯
 ```bash
 # Install dependencies
 npm install

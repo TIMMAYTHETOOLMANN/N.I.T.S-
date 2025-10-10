@@ -1,0 +1,22 @@
+{
+  "llmConfig": {
+    "modelName": "nous-hermes-2-mistral-7b",
+    "runtime": "llamacpp",
+    "modelPath": "./models/nous-hermes-2-mistral-7b.Q4_K_M.gguf",
+    "temperature": 0.7,
+    "maxTokens": 2048,
+    "contextWindow": 8192,
+    "systemPrompt": "You are a forensic analyst for legal and ESG documents."
+  },
+  "analysisSettings": {
+    "enableViolationDetection": true,
+    "enableSummary": true,
+    "enableForensicAnalysis": true,
+    "confidenceThreshold": 0.7
+  },
+  "outputSettings": {
+    "format": "markdown",
+    "includeMetadata": true,
+    "verboseLogging": false
+  }
+}
