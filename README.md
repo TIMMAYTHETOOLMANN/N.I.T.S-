@@ -13,6 +13,23 @@ This is the minimal, lethal core repository for NITS - a precision-engineered le
 
 ## Features
 
+✅ **Stealth Proxy System** 🔒 NEW
+- Sophisticated proxy rotation with health scoring and cooldown
+- NO Chromium - NO browser dependencies - Pure Python requests
+- Permanent headless mode disabled (no browser automation)
+- Single-click Docker deployment (production-ready)
+- Stealth headers, human-like delays, anti-bot heuristics
+- Session affinity per domain for consistency
+- See [PROXY_INTEGRATION_GUIDE.md](PROXY_INTEGRATION_GUIDE.md)
+
+✅ **Docker Deployment** 🐳 NEW
+- One-command deployment with Docker Compose
+- No Chromium/browser packages included
+- Production-ready containerization
+- Automatic health checks and restart policies
+- Volume persistence for uploads and outputs
+- Run: `./deploy_docker.sh` or `docker-compose up -d`
+
 ✅ **ML Service with OCR** 🧠 NEW
 - Python-based ML service for advanced document processing
 - OCR capabilities for scanned PDFs (Tesseract + Poppler)
@@ -111,7 +128,27 @@ proof/
 
 ## Quick Start
 
-### Option 1: Python Deployment (Production Ready) 🔧 NEW
+### Option 1: Docker Deployment (Recommended) 🐳 NEW
+```bash
+# Single-command deployment (no Chromium, no headless mode)
+./deploy_docker.sh
+
+# Or manually with docker-compose
+docker-compose up -d
+
+# Access the GUI
+open http://localhost:4000
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+See [PROXY_INTEGRATION_GUIDE.md](PROXY_INTEGRATION_GUIDE.md) for complete Docker documentation.
+
+### Option 2: Python Deployment (Production Ready) 🔧
 ```bash
 # Install Python dependencies
 pip install PyMuPDF pandas scikit-learn fuzzywuzzy python-Levenshtein nltk

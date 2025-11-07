@@ -44,3 +44,7 @@ models/*.gguf
 models/*.bin
 models/*.pt
 models/*.safetensors
+
+# Docker
+logs/*.log
+!logs/.gitkeep

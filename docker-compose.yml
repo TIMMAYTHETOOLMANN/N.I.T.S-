@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  nits-core:
+    build: .
+    container_name: nits-core-legal-engine
+    ports:
+      - "4000:4000"  # GUI Server
+      - "5000:5000"  # ML Service
+      - "3000:3000"  # Core API (if needed)
+    environment:
+      - NODE_ENV=production
+      - PYTHONUNBUFFERED=1
+      - NO_HEADLESS=true
+      - NO_BROWSER=true
+      # Add your API keys here or use .env file
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GOVINFO_API_KEY=${GOVINFO_API_KEY:-}
+    volumes:
+      # Persist uploads and outputs
+      - ./uploads:/app/uploads
+      - ./output:/app/output
+      - ./logs:/app/logs
+      # Optional: mount local .env
+      - ./.env:/app/.env:ro
+    restart: unless-stopped
+    networks:
+      - nits-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Optional: Add Neo4j if you need graph database
+  # neo4j:
+  #   image: neo4j:5.14
+  #   container_name: nits-neo4j
+  #   ports:
+  #     - "7474:7474"
+  #     - "7687:7687"
+  #   environment:
+  #     - NEO4J_AUTH=neo4j/password
+  #   volumes:
+  #     - neo4j-data:/data
+  #   networks:
+  #     - nits-network
+
+networks:
+  nits-network:
+    driver: bridge
+
+volumes:
+  neo4j-data:

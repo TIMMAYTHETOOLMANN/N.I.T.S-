@@ -1,0 +1,14 @@
+# Stealth Proxy System Requirements
+# NO CHROMIUM - NO BROWSER - Pure requests-based proxy system
+
+# Core HTTP and proxy libraries
+requests>=2.31.0
+urllib3>=2.0.0
+
+# Async proxy discovery (optional but recommended)
+proxybroker>=0.3.2
+aiohttp>=3.8.0
+
+# Additional utilities for proxy management
+aiosocks>=0.2.6
+pysocks>=1.7.1
