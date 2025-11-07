@@ -92,6 +92,26 @@ BLOCK_PATTERNS = [
 
 SOFT_STATUS_CODES = {403, 429, 503}
 
+# Stealth configuration constants
+MOBILE_UA_PROBABILITY = 0.6  # Probability of using mobile UA when is_mobile=True
+REFERER_INCLUSION_PROBABILITY = 0.85  # Probability of including referer header
+DNT_INCLUSION_PROBABILITY = 0.30  # Probability of including DNT header
+CACHE_CONTROL_PROBABILITY = 0.30  # Probability of including Cache-Control
+PRAGMA_PROBABILITY = 0.25  # Probability of including Pragma header
+
+# Proxy health and scoring constants
+INITIAL_PROXY_SCORE = 0.5  # Starting score for proxies with no history
+MAX_SCORE_DECAY = 0.2  # Maximum score decay from age (0-0.2)
+SCORE_DECAY_RATE = 0.05  # Decay per hour (5%)
+DECAY_HOURS_DIVISOR = 3600.0  # Convert seconds to hours
+
+# Proxy cooldown and penalty constants
+SOFT_FAIL_PENALTY_SECONDS = 20  # Cooldown for soft failures
+HARD_FAIL_PENALTY_SECONDS = 90  # Cooldown for hard failures
+MAX_PENALTY_MULTIPLIER = 3  # Maximum penalty multiplier
+FAILURE_THRESHOLD = 3  # Failures before penalty scaling kicks in
+COOLDOWN_REDUCTION_SUCCESS = 5  # Seconds to reduce cooldown on success
+
 
 def random_headers(
     is_mobile: bool = False,
@@ -99,7 +119,7 @@ def random_headers(
     extra: Optional[Dict[str, str]] = None
 ) -> Dict[str, str]:
     """Generate randomized stealth headers"""
-    ua_pool = MOBILE_UAS if is_mobile and random.random() < 0.6 else DESKTOP_UAS
+    ua_pool = MOBILE_UAS if is_mobile and random.random() < MOBILE_UA_PROBABILITY else DESKTOP_UAS
     ua = random.choice(ua_pool)
     
     headers = {
@@ -115,16 +135,16 @@ def random_headers(
         "Sec-Fetch-Dest": "document",
     }
     
-    if referer and random.random() < 0.85:
+    if referer and random.random() < REFERER_INCLUSION_PROBABILITY:
         headers["Referer"] = referer
     
-    if random.random() < 0.30:
+    if random.random() < DNT_INCLUSION_PROBABILITY:
         headers["DNT"] = "1"
     
-    if random.random() < 0.30:
+    if random.random() < CACHE_CONTROL_PROBABILITY:
         headers["Cache-Control"] = "max-age=0"
     
-    if random.random() < 0.25:
+    if random.random() < PRAGMA_PROBABILITY:
         headers["Pragma"] = "no-cache"
     
     if extra:
@@ -180,27 +200,27 @@ class Proxy:
     def score(self) -> float:
         """Calculate health score with time-based decay"""
         total = self.success + self.fail
-        base = (self.success / total) if total > 0 else 0.5
+        base = (self.success / total) if total > 0 else INITIAL_PROXY_SCORE
         
         # Slight time-based decay so old stats don't dominate
         age = max(1.0, time.time() - self.created_at)
-        decay = min(0.2, (age / 3600.0) * 0.05)  # up to -0.2 over many hours
+        decay = min(MAX_SCORE_DECAY, (age / DECAY_HOURS_DIVISOR) * SCORE_DECAY_RATE)
         return max(0.0, min(1.0, base - decay))
     
     def mark_success(self):
         """Mark proxy as successful"""
         self.success += 1
         self.last_used = time.time()
-        self.cooldown_until = max(self.cooldown_until - 5, time.time())
+        self.cooldown_until = max(self.cooldown_until - COOLDOWN_REDUCTION_SUCCESS, time.time())
     
     def mark_fail(self, soft: bool = False):
         """Mark proxy as failed with cooldown penalty"""
         self.fail += 1
         self.last_used = time.time()
-        base_penalty = 20 if soft else 90
+        base_penalty = SOFT_FAIL_PENALTY_SECONDS if soft else HARD_FAIL_PENALTY_SECONDS
         
         # Scale penalty somewhat by failure count
-        scaled = base_penalty * min(3, 1 + (self.fail // 3))
+        scaled = base_penalty * min(MAX_PENALTY_MULTIPLIER, 1 + (self.fail // FAILURE_THRESHOLD))
         self.cooldown_until = max(self.cooldown_until, time.time() + scaled)
     
     def is_available(self) -> bool:
